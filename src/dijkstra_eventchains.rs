@@ -3,6 +3,7 @@ use crate::eventchains::{EventChain, EventContext, FaultToleranceMode};
 use crate::graph::{Graph, NodeId, ShortestPathResult};
 use crate::middleware::{LoggingMiddleware, PerformanceMiddleware, TimingMiddleware};
 
+use std::cell::RefCell;
 use std::sync::Arc;
 
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
@@ -11,9 +12,10 @@ pub fn dijkstra_eventchains_bare(
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
-    let mut context = EventContext::new();
+    let context = RefCell::new(EventContext::new());
+    let mut borrowed = context.borrow_mut();
     let node_count = graph.nodes;
-    context.set("graph", graph);
+    borrowed.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -29,10 +31,10 @@ pub fn dijkstra_eventchains_bare(
     chain.add_event(Box::new(FinalizeResultEvent::new(target)));
 
     // Execute chain
-    let result = chain.execute(&mut context);
+    let result = chain.execute(&context);
 
     if result.success {
-        context.get("result").unwrap()
+        borrowed.get("result").unwrap()
     } else {
         ShortestPathResult {
             source,
@@ -50,9 +52,10 @@ pub fn dijkstra_eventchains_full(
     target: NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
-    let mut context = EventContext::new();
+    let context = RefCell::new(EventContext::new());
+    let mut borrowed = context.borrow_mut();
     let node_count = graph.nodes;
-    context.set("graph", graph);
+    borrowed.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -74,10 +77,10 @@ pub fn dijkstra_eventchains_full(
     chain.add_event(Box::new(FinalizeResultEvent::new(target)));
 
     // Execute chain
-    let result = chain.execute(&mut context);
+    let result = chain.execute(&context);
 
     if result.success {
-        context.get("result").unwrap()
+        borrowed.get("result").unwrap()
     } else {
         ShortestPathResult {
             source,
@@ -95,9 +98,10 @@ pub fn dijkstra_eventchains_optimized(
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
-    let mut context = EventContext::new();
+    let context = RefCell::new(EventContext::new());
+    let mut borrowed = context.borrow_mut();
     let node_count = graph.nodes;
-    context.set("graph", graph);
+    borrowed.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -110,10 +114,10 @@ pub fn dijkstra_eventchains_optimized(
     chain.add_event(Box::new(FinalizeResultEvent::new(target)));
 
     // Execute chain
-    let result = chain.execute(&mut context);
+    let result = chain.execute(&context);
 
     if result.success {
-        context.get("result").unwrap()
+        borrowed.get("result").unwrap()
     } else {
         ShortestPathResult {
             source,
@@ -128,23 +132,25 @@ pub fn dijkstra_eventchains_optimized(
 struct ProcessAllNodesEvent;
 
 impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
-    fn execute(&self, context: &mut EventContext) -> crate::eventchains::EventResult<()> {
+    fn execute(&self, context: &RefCell<EventContext>) -> crate::eventchains::EventResult<()> {
         use crate::eventchains::EventResult;
         use crate::graph::{DijkstraState, Graph, QueueNode};
         use std::collections::BinaryHeap;
 
+        let mut borrowed = context.borrow_mut();
+
         // Get references from context - note: these will be cloned
-        let queue: BinaryHeap<QueueNode> = match context.get("queue") {
+        let queue: BinaryHeap<QueueNode> = match borrowed.get("queue") {
             Some(q) => q,
             None => return EventResult::Failure("Queue not found".to_string()),
         };
 
-        let mut state: DijkstraState = match context.get("state") {
+        let mut state: DijkstraState = match borrowed.get("state") {
             Some(s) => s,
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: Arc<Graph> = match context.get("graph") {
+        let graph: Arc<Graph> = match borrowed.get("graph") {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found".to_string()),
         };
@@ -173,7 +179,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             }
         }
 
-        context.set("state", state);
+        borrowed.set("state", state);
         EventResult::Success(())
     }
 

@@ -1,4 +1,5 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventMiddleware, EventResult};
+use std::cell::RefCell;
 use std::time::Instant;
 
 /// Logging middleware that tracks event execution
@@ -16,8 +17,8 @@ impl EventMiddleware for LoggingMiddleware {
     fn execute(
         &self,
         event: &dyn ChainableEvent,
-        context: &mut EventContext,
-        next: &mut dyn FnMut(&mut EventContext) -> EventResult<()>,
+        context: &RefCell<EventContext>,
+        next: &mut dyn FnMut(&RefCell<EventContext>) -> EventResult<()>,
     ) -> EventResult<()> {
         if self.verbose {
             println!("  ▶ {} starting", event.name());
@@ -51,9 +52,11 @@ impl EventMiddleware for TimingMiddleware {
     fn execute(
         &self,
         event: &dyn ChainableEvent,
-        context: &mut EventContext,
-        next: &mut dyn FnMut(&mut EventContext) -> EventResult<()>,
+        context: &RefCell<EventContext>,
+        next: &mut dyn FnMut(&RefCell<EventContext>) -> EventResult<()>,
     ) -> EventResult<()> {
+        let mut borrowed = context.borrow_mut();
+
         let start = Instant::now();
 
         let result = next(context);
@@ -61,16 +64,12 @@ impl EventMiddleware for TimingMiddleware {
         let duration = start.elapsed();
 
         if self.log_timing {
-            println!(
-                "    ⏱️  {} took {}μs",
-                event.name(),
-                duration.as_micros()
-            );
+            println!("    ⏱️  {} took {}μs", event.name(), duration.as_micros());
         }
 
         // Store timing in context for profiling
         let key = format!("{}_duration_ns", event.name());
-        context.set(&key, duration.as_nanos() as u64);
+        borrowed.set(&key, duration.as_nanos() as u64);
 
         result
     }
@@ -97,8 +96,8 @@ impl EventMiddleware for PerformanceMiddleware {
     fn execute(
         &self,
         _event: &dyn ChainableEvent,
-        context: &mut EventContext,
-        next: &mut dyn FnMut(&mut EventContext) -> EventResult<()>,
+        context: &RefCell<EventContext>,
+        next: &mut dyn FnMut(&RefCell<EventContext>) -> EventResult<()>,
     ) -> EventResult<()> {
         {
             let mut count = self.event_count.lock().unwrap();

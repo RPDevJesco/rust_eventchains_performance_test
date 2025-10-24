@@ -1,5 +1,6 @@
 use hashbrown::HashMap;
 use std::any::Any;
+use std::cell::RefCell;
 use std::fmt;
 
 /// Result of an event execution
@@ -68,7 +69,7 @@ impl Default for EventContext {
 
 /// Trait for chainable events
 pub trait ChainableEvent: Send + Sync {
-    fn execute(&self, context: &mut EventContext) -> EventResult<()>;
+    fn execute(&self, context: &RefCell<EventContext>) -> EventResult<()>;
     fn name(&self) -> &str;
 }
 
@@ -77,8 +78,8 @@ pub trait EventMiddleware: Send + Sync {
     fn execute(
         &self,
         event: &dyn ChainableEvent,
-        context: &mut EventContext,
-        next: &mut dyn FnMut(&mut EventContext) -> EventResult<()>,
+        context: &RefCell<EventContext>,
+        next: &mut dyn FnMut(&RefCell<EventContext>) -> EventResult<()>,
     ) -> EventResult<()>;
 }
 
@@ -183,7 +184,7 @@ impl EventChain {
         self
     }
 
-    pub fn execute(&self, context: &mut EventContext) -> ChainResult {
+    pub fn execute(&self, context: &RefCell<EventContext>) -> ChainResult {
         let mut failures = Vec::new();
 
         for event in &self.events {
@@ -219,7 +220,7 @@ impl EventChain {
     fn execute_with_middleware(
         &self,
         event: &dyn ChainableEvent,
-        context: &mut EventContext,
+        context: &RefCell<EventContext>,
     ) -> EventResult<()> {
         if self.middlewares.is_empty() {
             return event.execute(context);
@@ -233,7 +234,7 @@ impl EventChain {
         &self,
         middleware_index: usize,
         event: &dyn ChainableEvent,
-        context: &mut EventContext,
+        context: &RefCell<EventContext>,
     ) -> EventResult<()> {
         if middleware_index >= self.middlewares.len() {
             // Base case: execute the actual event
@@ -245,7 +246,7 @@ impl EventChain {
         let middleware = &self.middlewares[middleware_idx];
 
         // Create a closure that calls the next middleware (or event)
-        let mut next = |ctx: &mut EventContext| -> EventResult<()> {
+        let mut next = |ctx: &RefCell<EventContext>| -> EventResult<()> {
             self.execute_middleware_recursive(middleware_index + 1, event, ctx)
         };
 

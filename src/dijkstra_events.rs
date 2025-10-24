@@ -1,5 +1,6 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventResult};
 use crate::graph::{DijkstraState, Graph, NodeId, QueueNode};
+use std::cell::RefCell;
 use std::collections::BinaryHeap;
 use std::sync::Arc;
 
@@ -16,10 +17,11 @@ impl InitializeStateEvent {
 }
 
 impl ChainableEvent for InitializeStateEvent {
-    fn execute(&self, context: &mut EventContext) -> EventResult<()> {
+    fn execute(&self, context: &RefCell<EventContext>) -> EventResult<()> {
+        let mut borrowed = context.borrow_mut();
         let state = DijkstraState::new(self.node_count, self.source);
-        context.set("state", state);
-        context.set("source", self.source);
+        borrowed.set("state", state);
+        borrowed.set("source", self.source);
         EventResult::Success(())
     }
 
@@ -32,8 +34,10 @@ impl ChainableEvent for InitializeStateEvent {
 pub struct InitializePriorityQueueEvent;
 
 impl ChainableEvent for InitializePriorityQueueEvent {
-    fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let source: NodeId = match context.get("source") {
+    fn execute(&self, context: &RefCell<EventContext>) -> EventResult<()> {
+        let mut borrowed = context.borrow_mut();
+
+        let source: NodeId = match borrowed.get("source") {
             Some(s) => s,
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
@@ -44,7 +48,7 @@ impl ChainableEvent for InitializePriorityQueueEvent {
             distance: 0,
         });
 
-        context.set("queue", queue);
+        borrowed.set("queue", queue);
         EventResult::Success(())
     }
 
@@ -57,18 +61,20 @@ impl ChainableEvent for InitializePriorityQueueEvent {
 pub struct ProcessNodeEvent;
 
 impl ChainableEvent for ProcessNodeEvent {
-    fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let queue: BinaryHeap<QueueNode> = match context.get("queue") {
+    fn execute(&self, context: &RefCell<EventContext>) -> EventResult<()> {
+        let mut borrowed = context.borrow_mut();
+
+        let queue: BinaryHeap<QueueNode> = match borrowed.get("queue") {
             Some(q) => q,
             None => return EventResult::Failure("Queue not found in context".to_string()),
         };
 
-        let mut state: DijkstraState = match context.get("state") {
+        let mut state: DijkstraState = match borrowed.get("state") {
             Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let graph: Arc<Graph> = match context.get("graph") {
+        let graph: Arc<Graph> = match borrowed.get("graph") {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
@@ -78,9 +84,9 @@ impl ChainableEvent for ProcessNodeEvent {
         if let Some(QueueNode { node, distance }) = queue.pop() {
             // Skip if already visited or if distance is stale
             if state.visited[node.0] || distance > state.distances[node.0] {
-                context.set("queue", queue);
-                context.set("state", state);
-                context.set("continue", true);
+                borrowed.set("queue", queue);
+                borrowed.set("state", state);
+                borrowed.set("continue", true);
                 return EventResult::Success(());
             }
 
@@ -101,13 +107,13 @@ impl ChainableEvent for ProcessNodeEvent {
                 }
             }
 
-            context.set("continue", !queue.is_empty());
+            borrowed.set("continue", !queue.is_empty());
         } else {
-            context.set("continue", false);
+            borrowed.set("continue", false);
         }
 
-        context.set("queue", queue);
-        context.set("state", state);
+        borrowed.set("queue", queue);
+        borrowed.set("state", state);
         EventResult::Success(())
     }
 
@@ -128,13 +134,15 @@ impl FinalizeResultEvent {
 }
 
 impl ChainableEvent for FinalizeResultEvent {
-    fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let state: DijkstraState = match context.get("state") {
+    fn execute(&self, context: &RefCell<EventContext>) -> EventResult<()> {
+        let mut borrowed = context.borrow_mut();
+
+        let state: DijkstraState = match borrowed.get("state") {
             Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let source: NodeId = match context.get("source") {
+        let source: NodeId = match borrowed.get("source") {
             Some(s) => s,
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
@@ -142,7 +150,7 @@ impl ChainableEvent for FinalizeResultEvent {
         let result =
             crate::graph::ShortestPathResult::reconstruct_path(&state, source, self.target);
 
-        context.set("result", result);
+        borrowed.set("result", result);
         EventResult::Success(())
     }
 
