@@ -1,8 +1,13 @@
 use crate::graph::{DijkstraState, Graph, NodeId, QueueNode, ShortestPathResult};
 use std::collections::BinaryHeap;
+use std::sync::Arc;
 
 /// Traditional implementation of Dijkstra's algorithm
-pub fn dijkstra_traditional(graph: Graph, source: NodeId, target: NodeId) -> ShortestPathResult {
+pub fn dijkstra_traditional(
+    graph: Arc<Graph>,
+    source: NodeId,
+    target: NodeId,
+) -> ShortestPathResult {
     let mut state = DijkstraState::new(graph.nodes, source);
     let mut queue = BinaryHeap::new();
 
@@ -42,7 +47,7 @@ pub fn dijkstra_traditional(graph: Graph, source: NodeId, target: NodeId) -> Sho
 
 /// Traditional implementation with logging
 pub fn dijkstra_traditional_logged(
-    graph: Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
     verbose: bool,

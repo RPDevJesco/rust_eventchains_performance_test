@@ -3,9 +3,11 @@ use crate::eventchains::{EventChain, EventContext, FaultToleranceMode};
 use crate::graph::{Graph, NodeId, ShortestPathResult};
 use crate::middleware::{LoggingMiddleware, PerformanceMiddleware, TimingMiddleware};
 
+use std::sync::Arc;
+
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
-    graph: Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
@@ -43,7 +45,7 @@ pub fn dijkstra_eventchains_bare(
 
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
-    graph: Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
     verbose: bool,
@@ -89,7 +91,7 @@ pub fn dijkstra_eventchains_full(
 /// Run Dijkstra using a more efficient EventChains approach
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
-    graph: Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
@@ -142,7 +144,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: Graph = match context.get("graph") {
+        let graph: Arc<Graph> = match context.get("graph") {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found".to_string()),
         };
