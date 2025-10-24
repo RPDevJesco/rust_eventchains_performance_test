@@ -1,9 +1,9 @@
+use crate::Graph;
+use crate::NodeId;
 use crate::graph::DijkstraState;
 use crate::graph::QueueNode;
 use crate::graph::ShortestPathResult;
-use crate::Graph;
-use crate::NodeId;
-use std::collections::BTreeSet;
+use std::collections::BinaryHeap;
 use std::fmt;
 use std::sync::Arc;
 
@@ -44,7 +44,7 @@ pub struct EventContext {
     state: Option<DijkstraState>,
     source: Option<NodeId>,
     result: Option<ShortestPathResult>,
-    queue: Option<BTreeSet<QueueNode>>,
+    queue: Option<BinaryHeap<QueueNode>>,
 }
 
 impl EventContext {
@@ -94,11 +94,11 @@ impl EventContext {
         self.result.as_ref()
     }
 
-    pub fn set_queue(&mut self, queue: BTreeSet<QueueNode>) {
+    pub fn set_queue(&mut self, queue: BinaryHeap<QueueNode>) {
         self.queue = Some(queue);
     }
 
-    pub fn take_queue(&mut self) -> Option<BTreeSet<QueueNode>> {
+    pub fn take_queue(&mut self) -> Option<BinaryHeap<QueueNode>> {
         self.queue.take()
     }
 }

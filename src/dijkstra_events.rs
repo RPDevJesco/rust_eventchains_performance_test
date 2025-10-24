@@ -1,6 +1,6 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventResult};
 use crate::graph::{DijkstraState, Graph, NodeId, QueueNode};
-use std::collections::BTreeSet;
+use std::collections::BinaryHeap;
 use std::sync::Arc;
 
 /// Event: Initialize Dijkstra's algorithm state
@@ -41,8 +41,8 @@ impl ChainableEvent for InitializePriorityQueueEvent {
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
 
-        let mut queue = BTreeSet::new();
-        queue.insert(QueueNode {
+        let mut queue = BinaryHeap::new();
+        queue.push(QueueNode {
             node: source,
             distance: 0,
         });
@@ -61,7 +61,7 @@ pub struct ProcessNodeEvent;
 
 impl ChainableEvent for ProcessNodeEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let mut queue: BTreeSet<QueueNode> = match context.take_queue() {
+        let mut queue: BinaryHeap<QueueNode> = match context.take_queue() {
             Some(q) => q,
             None => return EventResult::Failure("Queue not found in context".to_string()),
         };
@@ -76,7 +76,7 @@ impl ChainableEvent for ProcessNodeEvent {
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
 
-        if let Some(QueueNode { node, distance }) = queue.pop_last() {
+        if let Some(QueueNode { node, distance }) = queue.pop() {
             // Skip if already visited or if distance is stale
             if state.visited[node.0] || distance > state.distances[node.0] {
                 context.set_queue(queue);
@@ -94,7 +94,7 @@ impl ChainableEvent for ProcessNodeEvent {
                     state.distances[edge.to.0] = new_distance;
                     state.predecessors[edge.to.0] = Some(node);
 
-                    queue.insert(QueueNode {
+                    queue.push(QueueNode {
                         node: edge.to,
                         distance: new_distance,
                     });
