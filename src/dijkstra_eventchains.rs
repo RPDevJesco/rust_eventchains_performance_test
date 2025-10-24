@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
-    graph: Arc<Graph>,
+    graph: &Arc<Graph>,
     source: &NodeId,
     target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set_graph(graph);
+    context.set_graph(graph.clone());
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -32,7 +32,7 @@ pub fn dijkstra_eventchains_bare(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get_result().unwrap().clone()
+        context.take_result().unwrap()
     } else {
         ShortestPathResult {
             source: *source,
@@ -45,14 +45,14 @@ pub fn dijkstra_eventchains_bare(
 
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
-    graph: Arc<Graph>,
+    graph: &Arc<Graph>,
     source: &NodeId,
     target: &NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set_graph(graph);
+    context.set_graph(graph.clone());
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -77,7 +77,7 @@ pub fn dijkstra_eventchains_full(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get_result().unwrap().clone()
+        context.take_result().unwrap()
     } else {
         ShortestPathResult {
             source: *source,
@@ -91,13 +91,13 @@ pub fn dijkstra_eventchains_full(
 /// Run Dijkstra using a more efficient EventChains approach
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
-    graph: Arc<Graph>,
+    graph: &Arc<Graph>,
     source: &NodeId,
     target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set_graph(graph);
+    context.set_graph(graph.clone());
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -113,7 +113,7 @@ pub fn dijkstra_eventchains_optimized(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get_result().unwrap().clone()
+        context.take_result().unwrap()
     } else {
         ShortestPathResult {
             source: *source,

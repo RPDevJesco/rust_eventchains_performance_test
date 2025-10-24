@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 /// Traditional implementation of Dijkstra's algorithm
 pub fn dijkstra_traditional(
-    graph: Arc<Graph>,
+    graph: &Arc<Graph>,
     source: &NodeId,
     target: &NodeId,
 ) -> ShortestPathResult {
@@ -47,7 +47,7 @@ pub fn dijkstra_traditional(
 
 /// Traditional implementation with logging
 pub fn dijkstra_traditional_logged(
-    graph: Arc<Graph>,
+    graph: &Arc<Graph>,
     source: &NodeId,
     target: &NodeId,
     verbose: bool,

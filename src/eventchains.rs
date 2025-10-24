@@ -90,8 +90,8 @@ impl EventContext {
         self.result = Some(result);
     }
 
-    pub fn get_result(&mut self) -> Option<&ShortestPathResult> {
-        self.result.as_ref()
+    pub fn take_result(&mut self) -> Option<ShortestPathResult> {
+        self.result.take()
     }
 
     pub fn set_queue(&mut self, queue: BinaryHeap<QueueNode>) {
