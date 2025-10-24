@@ -32,9 +32,9 @@ pub fn dijkstra_eventchains_bare(
     let result = chain.execute(&mut context);
 
     if result.success {
-        let res: &ShortestPathResult = context.get("result").unwrap();
+        let res: Box<ShortestPathResult> = context.take("result").unwrap();
 
-        res.clone()
+        *res
     } else {
         ShortestPathResult {
             source,
@@ -79,9 +79,9 @@ pub fn dijkstra_eventchains_full(
     let result = chain.execute(&mut context);
 
     if result.success {
-        let res: &ShortestPathResult = context.get("result").unwrap();
+        let res: Box<ShortestPathResult> = context.take("result").unwrap();
 
-        res.clone()
+        *res
     } else {
         ShortestPathResult {
             source,
@@ -117,9 +117,9 @@ pub fn dijkstra_eventchains_optimized(
     let result = chain.execute(&mut context);
 
     if result.success {
-        let res: &ShortestPathResult = context.get("result").unwrap();
+        let res: Box<ShortestPathResult> = context.take("result").unwrap();
 
-        res.clone()
+        *res
     } else {
         ShortestPathResult {
             source,
@@ -150,8 +150,8 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
-            Some(g) => g.clone(),
+        let graph: &Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
+            Some(g) => g,
             None => return EventResult::Failure("Graph not found".to_string()),
         };
 

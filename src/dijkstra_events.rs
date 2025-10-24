@@ -68,8 +68,8 @@ impl ChainableEvent for ProcessNodeEvent {
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let graph: Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
-            Some(g) => g.clone(),
+        let graph: &Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
+            Some(g) => g,
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
 
