@@ -5,7 +5,7 @@ use crate::middleware::{LoggingMiddleware, PerformanceMiddleware, TimingMiddlewa
 
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
-    graph: &Graph,
+    graph: Graph,
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
@@ -42,7 +42,7 @@ pub fn dijkstra_eventchains_bare(
 
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
-    graph: &Graph,
+    graph: Graph,
     source: NodeId,
     target: NodeId,
     verbose: bool,
@@ -87,7 +87,7 @@ pub fn dijkstra_eventchains_full(
 /// Run Dijkstra using a more efficient EventChains approach
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
-    graph: &Graph,
+    graph: Graph,
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {

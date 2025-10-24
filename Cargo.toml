@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 colored = "3.0.0"
+hashbrown = "*"
 
 [profile.release]
 opt-level = 3

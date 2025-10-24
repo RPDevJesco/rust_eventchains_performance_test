@@ -1,4 +1,3 @@
-use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
 
 /// Node in the graph
@@ -39,7 +38,7 @@ impl Graph {
     /// Generate a random connected graph
     pub fn random_connected(nodes: usize, edges: usize, max_weight: u32) -> Self {
         use std::collections::HashSet;
-        
+
         let mut graph = Graph::new(nodes);
         let mut rng = SimpleRng::new(12345);
         let mut edge_set = HashSet::new();
@@ -58,7 +57,7 @@ impl Graph {
         while added < edges && attempts < edges * 10 {
             let from = rng.next_usize() % nodes;
             let to = rng.next_usize() % nodes;
-            
+
             if from != to {
                 let edge_key = (from.min(to), from.max(to));
                 if edge_set.insert(edge_key) {
@@ -85,7 +84,9 @@ impl SimpleRng {
     }
 
     pub fn next_usize(&mut self) -> usize {
-        self.state = self.state.wrapping_mul(6364136223846793005)
+        self.state = self
+            .state
+            .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
         (self.state >> 32) as usize
     }
@@ -122,7 +123,9 @@ pub struct QueueNode {
 impl Ord for QueueNode {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering for min-heap
-        other.distance.cmp(&self.distance)
+        other
+            .distance
+            .cmp(&self.distance)
             .then_with(|| self.node.0.cmp(&other.node.0))
     }
 }
@@ -143,11 +146,7 @@ pub struct ShortestPathResult {
 }
 
 impl ShortestPathResult {
-    pub fn reconstruct_path(
-        state: &DijkstraState,
-        source: NodeId,
-        target: NodeId,
-    ) -> Self {
+    pub fn reconstruct_path(state: &DijkstraState, source: NodeId, target: NodeId) -> Self {
         let distance = if state.distances[target.0] == u32::MAX {
             None
         } else {

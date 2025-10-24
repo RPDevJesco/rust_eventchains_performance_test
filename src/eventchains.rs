@@ -1,5 +1,5 @@
+use hashbrown::HashMap;
 use std::any::Any;
-use std::collections::HashMap;
 use std::fmt;
 
 /// Result of an event execution
@@ -50,9 +50,9 @@ impl EventContext {
     }
 
     pub fn get<T: Any + Send + Sync + Clone>(&self, key: &str) -> Option<T> {
-        self.data.get(key).and_then(|boxed| {
-            boxed.downcast_ref::<T>().cloned()
-        })
+        self.data
+            .get(key)
+            .and_then(|boxed| boxed.downcast_ref::<T>().cloned())
     }
 
     pub fn has(&self, key: &str) -> bool {
