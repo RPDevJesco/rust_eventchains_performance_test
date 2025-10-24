@@ -21,8 +21,8 @@ impl InitializeStateEvent {
 impl ChainableEvent for InitializeStateEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
         let state = DijkstraState::new(self.node_count, &self.source);
-        context.set("state", state);
-        context.set("source", self.source);
+        context.set_state(state);
+        context.set_source(self.source);
         EventResult::Success(())
     }
 
@@ -36,7 +36,7 @@ pub struct InitializePriorityQueueEvent;
 
 impl ChainableEvent for InitializePriorityQueueEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let source: NodeId = match context.get::<NodeId>("source") {
+        let source: NodeId = match context.get_source() {
             Some(s) => s.clone(),
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
@@ -47,7 +47,7 @@ impl ChainableEvent for InitializePriorityQueueEvent {
             distance: 0,
         });
 
-        context.set("queue", queue);
+        context.set_queue(queue);
         EventResult::Success(())
     }
 
@@ -61,17 +61,17 @@ pub struct ProcessNodeEvent;
 
 impl ChainableEvent for ProcessNodeEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let mut queue: BTreeSet<QueueNode> = match context.take("queue") {
-            Some(q) => *q,
+        let mut queue: BTreeSet<QueueNode> = match context.take_queue() {
+            Some(q) => q,
             None => return EventResult::Failure("Queue not found in context".to_string()),
         };
 
-        let mut state: DijkstraState = match context.take("state") {
-            Some(s) => *s,
+        let mut state: DijkstraState = match context.take_state() {
+            Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let graph: &Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
+        let graph: &Arc<Graph> = match context.get_graph() {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
@@ -79,9 +79,9 @@ impl ChainableEvent for ProcessNodeEvent {
         if let Some(QueueNode { node, distance }) = queue.pop_last() {
             // Skip if already visited or if distance is stale
             if state.visited[node.0] || distance > state.distances[node.0] {
-                context.set("queue", queue);
-                context.set("state", state);
-                context.set("continue", true);
+                context.set_queue(queue);
+                context.set_state(state);
+                context.set_continues(true);
                 return EventResult::Success(());
             }
 
@@ -102,13 +102,13 @@ impl ChainableEvent for ProcessNodeEvent {
                 }
             }
 
-            context.set("continue", !queue.is_empty());
+            context.set_continues(!queue.is_empty());
         } else {
-            context.set("continue", false);
+            context.set_continues(false);
         }
 
-        context.set("queue", queue);
-        context.set("state", state);
+        context.set_queue(queue);
+        context.set_state(state);
         EventResult::Success(())
     }
 
@@ -130,12 +130,12 @@ impl FinalizeResultEvent {
 
 impl ChainableEvent for FinalizeResultEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let state: &DijkstraState = match context.get("state") {
+        let state: &DijkstraState = match context.get_state() {
             Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let source: &NodeId = match context.get("source") {
+        let source: &NodeId = match context.get_source() {
             Some(s) => s,
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
@@ -143,7 +143,7 @@ impl ChainableEvent for FinalizeResultEvent {
         let result =
             crate::graph::ShortestPathResult::reconstruct_path(&state, source, &self.target);
 
-        context.set("result", result);
+        context.set_result(result);
         EventResult::Success(())
     }
 

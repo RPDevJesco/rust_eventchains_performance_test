@@ -13,7 +13,7 @@ pub fn dijkstra_eventchains_bare(
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set("graph", graph);
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -32,9 +32,7 @@ pub fn dijkstra_eventchains_bare(
     let result = chain.execute(&mut context);
 
     if result.success {
-        let res: Box<ShortestPathResult> = context.take("result").unwrap();
-
-        *res
+        context.take_result().unwrap()
     } else {
         ShortestPathResult {
             source: *source,
@@ -54,7 +52,7 @@ pub fn dijkstra_eventchains_full(
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set("graph", graph);
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -79,9 +77,7 @@ pub fn dijkstra_eventchains_full(
     let result = chain.execute(&mut context);
 
     if result.success {
-        let res: Box<ShortestPathResult> = context.take("result").unwrap();
-
-        *res
+        context.take_result().unwrap()
     } else {
         ShortestPathResult {
             source: *source,
@@ -101,7 +97,7 @@ pub fn dijkstra_eventchains_optimized(
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set("graph", graph);
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -117,9 +113,7 @@ pub fn dijkstra_eventchains_optimized(
     let result = chain.execute(&mut context);
 
     if result.success {
-        let res: Box<ShortestPathResult> = context.take("result").unwrap();
-
-        *res
+        context.take_result().unwrap()
     } else {
         ShortestPathResult {
             source: *source,
@@ -140,17 +134,17 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
         use std::collections::BTreeSet;
 
         // Get references from context - note: these will be cloned
-        let mut queue: BTreeSet<QueueNode> = match context.take("queue") {
-            Some(q) => *q,
+        let mut queue: BTreeSet<QueueNode> = match context.take_queue() {
+            Some(q) => q,
             None => return EventResult::Failure("Queue not found".to_string()),
         };
 
-        let mut state: DijkstraState = match context.take("state") {
-            Some(s) => *s,
+        let mut state: DijkstraState = match context.take_state() {
+            Some(s) => s,
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: &Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
+        let graph: &Arc<Graph> = match context.get_graph() {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found".to_string()),
         };
@@ -177,7 +171,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             }
         }
 
-        context.set("state", state);
+        context.set_state(state);
         EventResult::Success(())
     }
 

@@ -1,6 +1,11 @@
-use hashbrown::HashMap;
-use std::any::Any;
+use crate::graph::DijkstraState;
+use crate::graph::QueueNode;
+use crate::graph::ShortestPathResult;
+use crate::Graph;
+use crate::NodeId;
+use std::collections::BTreeSet;
 use std::fmt;
+use std::sync::Arc;
 
 /// Result of an event execution
 #[derive(Debug, Clone)]
@@ -35,35 +40,96 @@ impl<T> EventResult<T> {
 
 /// Context that flows through the event chain
 pub struct EventContext {
-    data: HashMap<String, Box<dyn Any + Send + Sync>>,
+    graph: Option<Arc<Graph>>,
+    state: Option<DijkstraState>,
+    source: Option<NodeId>,
+    continues: Option<bool>,
+    result: Option<ShortestPathResult>,
+    queue: Option<BTreeSet<QueueNode>>,
 }
 
 impl EventContext {
     pub fn new() -> Self {
         Self {
-            data: HashMap::new(),
+            graph: None,
+            state: None,
+            source: None,
+            continues: None,
+            result: None,
+            queue: None,
         }
     }
 
-    pub fn set<T: Any + Send + Sync>(&mut self, key: &str, value: T) {
-        self.data.insert(key.to_string(), Box::new(value));
+    pub fn set_graph(&mut self, graph: Arc<Graph>) {
+        self.graph = Some(graph);
     }
 
-    pub fn get<T: Any + Send + Sync + Clone>(&self, key: &str) -> Option<&T> {
-        self.data
-            .get(key)
-            .and_then(|boxed| boxed.downcast_ref::<T>())
+    pub fn get_graph(&self) -> Option<&Arc<Graph>> {
+        self.graph.as_ref()
     }
 
-    pub fn take<T: Any + Send + Sync>(&mut self, key: &str) -> Option<Box<T>> {
-        self.data
-            .remove(key)
-            .map(|v| v.downcast::<T>().ok())
-            .flatten()
+    pub fn take_graph(&mut self) -> Option<Arc<Graph>> {
+        self.graph.take()
     }
 
-    pub fn has(&self, key: &str) -> bool {
-        self.data.contains_key(key)
+    pub fn set_state(&mut self, state: DijkstraState) {
+        self.state = Some(state);
+    }
+
+    pub fn get_state(&self) -> Option<&DijkstraState> {
+        self.state.as_ref()
+    }
+
+    pub fn take_state(&mut self) -> Option<DijkstraState> {
+        self.state.take()
+    }
+
+    pub fn set_source(&mut self, source: NodeId) {
+        self.source = Some(source);
+    }
+
+    pub fn get_source(&self) -> Option<&NodeId> {
+        self.source.as_ref()
+    }
+
+    pub fn take_source(&mut self) -> Option<NodeId> {
+        self.source.take()
+    }
+
+    pub fn set_continues(&mut self, continues: bool) {
+        self.continues = Some(continues);
+    }
+
+    pub fn get_continues(&self) -> Option<&bool> {
+        self.continues.as_ref()
+    }
+
+    pub fn take_continues(&mut self) -> Option<bool> {
+        self.continues.take()
+    }
+
+    pub fn set_result(&mut self, result: ShortestPathResult) {
+        self.result = Some(result);
+    }
+
+    pub fn get_result(&self) -> Option<&ShortestPathResult> {
+        self.result.as_ref()
+    }
+
+    pub fn take_result(&mut self) -> Option<ShortestPathResult> {
+        self.result.take()
+    }
+
+    pub fn set_queue(&mut self, queue: BTreeSet<QueueNode>) {
+        self.queue = Some(queue);
+    }
+
+    pub fn get_queue(&self) -> Option<&BTreeSet<QueueNode>> {
+        self.queue.as_ref()
+    }
+
+    pub fn take_queue(&mut self) -> Option<BTreeSet<QueueNode>> {
+        self.queue.take()
     }
 }
 

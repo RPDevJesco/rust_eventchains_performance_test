@@ -65,8 +65,8 @@ impl EventMiddleware for TimingMiddleware {
         }
 
         // Store timing in context for profiling
-        let key = format!("{}_duration_ns", event.name());
-        context.set(&key, duration.as_nanos() as u64);
+        // let key = format!("{}_duration_ns", event.name());
+        // context.set(&key, duration.as_nanos() as u64);
 
         result
     }
