@@ -34,3 +34,13 @@ For Dijkstra's algorithm with 1000 nodes:
 - Each event clones ~100KB of state (DijkstraState + Graph + PriorityQueue)
 - With ~1000 events, this results in ~200MB of unnecessary cloning
 - This explains the 231,443% overhead
+
+## Addendum
+
+**Research complete: **
+EventChains pattern (type-erased dynamic dispatch w/ shared state) achieves 10-30% overhead in GC languages 
+- 36-40% in Rust without type erasure,
+- 73-862% with type erasure
+
+This documents where Rust's architectural assumptions (compile-time types, zero-cost abstractions) conflict with runtime-dynamic patterns. Not a Rust criticism, just honest tradeoff documentation.
+Thanks to [@arr_ohh_bee](https://x.com/arr_ohh_bee) for comprehensive optimization attempts on both approaches https://github.com/kimono-koans/rust_eventchains_performance_test/tree/performance. The data speaks for itself.
