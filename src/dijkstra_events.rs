@@ -71,7 +71,7 @@ impl ChainableEvent for ProcessNodeEvent {
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let graph: &Arc<Graph> = match context.get_graph() {
+        let graph: &Graph = match context.get_graph() {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
@@ -87,7 +87,7 @@ impl ChainableEvent for ProcessNodeEvent {
             state.visited[node.0] = true;
 
             // Process neighbors
-            for edge in &graph.adjacency_list[node.0] {
+            graph.adjacency_list[node.0].iter().for_each(|edge| {
                 let new_distance = distance.saturating_add(edge.weight);
 
                 if new_distance < state.distances[edge.to.0] {
@@ -99,7 +99,7 @@ impl ChainableEvent for ProcessNodeEvent {
                         distance: new_distance,
                     });
                 }
-            }
+            })
         }
 
         context.set_queue(queue);

@@ -39,15 +39,15 @@ impl<T> EventResult<T> {
 }
 
 /// Context that flows through the event chain
-pub struct EventContext {
-    graph: Option<Arc<Graph>>,
+pub struct EventContext<'a> {
+    graph: Option<&'a Graph>,
     state: Option<DijkstraState>,
     source: Option<NodeId>,
     result: Option<ShortestPathResult>,
     queue: Option<BinaryHeap<QueueNode>>,
 }
 
-impl EventContext {
+impl<'a> EventContext<'a> {
     pub fn new() -> Self {
         Self {
             graph: None,
@@ -58,12 +58,12 @@ impl EventContext {
         }
     }
 
-    pub fn set_graph(&mut self, graph: Arc<Graph>) {
+    pub fn set_graph(&mut self, graph: &'a Graph) {
         self.graph = Some(graph);
     }
 
-    pub fn get_graph(&self) -> Option<&Arc<Graph>> {
-        self.graph.as_ref()
+    pub fn get_graph(&'a self) -> Option<&'a Graph> {
+        self.graph
     }
 
     pub fn set_state(&mut self, state: DijkstraState) {
@@ -103,7 +103,7 @@ impl EventContext {
     }
 }
 
-impl Default for EventContext {
+impl<'a> Default for EventContext<'a> {
     fn default() -> Self {
         Self::new()
     }

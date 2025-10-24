@@ -7,13 +7,13 @@ use std::sync::Arc;
 
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
-    graph: &Arc<Graph>,
+    graph: &Graph,
     source: &NodeId,
     target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set_graph(graph.clone());
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -45,14 +45,14 @@ pub fn dijkstra_eventchains_bare(
 
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
-    graph: &Arc<Graph>,
+    graph: &Graph,
     source: &NodeId,
     target: &NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set_graph(graph.clone());
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -91,13 +91,13 @@ pub fn dijkstra_eventchains_full(
 /// Run Dijkstra using a more efficient EventChains approach
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
-    graph: &Arc<Graph>,
+    graph: &Graph,
     source: &NodeId,
     target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
-    context.set_graph(graph.clone());
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -144,7 +144,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: &Arc<Graph> = match context.get_graph() {
+        let graph: &Graph = match context.get_graph() {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found".to_string()),
         };
@@ -156,7 +156,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
 
             state.visited[node.0] = true;
 
-            for edge in &graph.adjacency_list[node.0] {
+            graph.adjacency_list[node.0].iter().for_each(|edge| {
                 let new_distance = distance.saturating_add(edge.weight);
 
                 if new_distance < state.distances[edge.to.0] {
@@ -168,7 +168,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
                         distance: new_distance,
                     });
                 }
-            }
+            })
         }
 
         context.set_state(state);

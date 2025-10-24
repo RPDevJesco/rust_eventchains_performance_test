@@ -3,11 +3,7 @@ use std::collections::BinaryHeap;
 use std::sync::Arc;
 
 /// Traditional implementation of Dijkstra's algorithm
-pub fn dijkstra_traditional(
-    graph: &Arc<Graph>,
-    source: &NodeId,
-    target: &NodeId,
-) -> ShortestPathResult {
+pub fn dijkstra_traditional(graph: &Graph, source: &NodeId, target: &NodeId) -> ShortestPathResult {
     let mut state = DijkstraState::new(graph.nodes, source);
     let mut queue = BinaryHeap::new();
 
@@ -27,7 +23,7 @@ pub fn dijkstra_traditional(
             break;
         }
 
-        for edge in &graph.adjacency_list[node.0] {
+        graph.adjacency_list[node.0].iter().for_each(|edge| {
             let new_distance = distance.saturating_add(edge.weight);
 
             if new_distance < state.distances[edge.to.0] {
@@ -39,7 +35,7 @@ pub fn dijkstra_traditional(
                     distance: new_distance,
                 });
             }
-        }
+        })
     }
 
     ShortestPathResult::reconstruct_path(&state, &source, &target)
@@ -47,7 +43,7 @@ pub fn dijkstra_traditional(
 
 /// Traditional implementation with logging
 pub fn dijkstra_traditional_logged(
-    graph: &Arc<Graph>,
+    graph: &Graph,
     source: &NodeId,
     target: &NodeId,
     verbose: bool,
@@ -91,7 +87,7 @@ pub fn dijkstra_traditional_logged(
             break;
         }
 
-        for edge in &graph.adjacency_list[node.0] {
+        graph.adjacency_list[node.0].iter().for_each(|edge| {
             let new_distance = distance.saturating_add(edge.weight);
 
             if new_distance < state.distances[edge.to.0] {
@@ -103,7 +99,7 @@ pub fn dijkstra_traditional_logged(
                     distance: new_distance,
                 });
             }
-        }
+        })
     }
 
     if verbose {
