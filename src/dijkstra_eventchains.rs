@@ -137,10 +137,10 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
     fn execute(&self, context: &mut EventContext) -> crate::eventchains::EventResult<()> {
         use crate::eventchains::EventResult;
         use crate::graph::{DijkstraState, Graph, QueueNode};
-        use std::collections::BinaryHeap;
+        use std::collections::BTreeSet;
 
         // Get references from context - note: these will be cloned
-        let mut queue: BinaryHeap<QueueNode> = match context.take("queue") {
+        let mut queue: BTreeSet<QueueNode> = match context.take("queue") {
             Some(q) => *q,
             None => return EventResult::Failure("Queue not found".to_string()),
         };
@@ -155,7 +155,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             None => return EventResult::Failure("Graph not found".to_string()),
         };
 
-        while let Some(QueueNode { node, distance }) = queue.pop() {
+        while let Some(QueueNode { node, distance }) = queue.pop_last() {
             if state.visited[node.0] || distance > state.distances[node.0] {
                 continue;
             }
@@ -169,7 +169,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
                     state.distances[edge.to.0] = new_distance;
                     state.predecessors[edge.to.0] = Some(node);
 
-                    queue.push(QueueNode {
+                    queue.insert(QueueNode {
                         node: edge.to,
                         distance: new_distance,
                     });

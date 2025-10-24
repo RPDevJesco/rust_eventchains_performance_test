@@ -1,5 +1,5 @@
 use crate::graph::{DijkstraState, Graph, NodeId, QueueNode, ShortestPathResult};
-use std::collections::BinaryHeap;
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 /// Traditional implementation of Dijkstra's algorithm
@@ -9,14 +9,14 @@ pub fn dijkstra_traditional(
     target: NodeId,
 ) -> ShortestPathResult {
     let mut state = DijkstraState::new(graph.nodes, source);
-    let mut queue = BinaryHeap::new();
+    let mut queue = BTreeSet::new();
 
-    queue.push(QueueNode {
+    queue.insert(QueueNode {
         node: source,
         distance: 0,
     });
 
-    while let Some(QueueNode { node, distance }) = queue.pop() {
+    while let Some(QueueNode { node, distance }) = queue.pop_last() {
         if state.visited[node.0] || distance > state.distances[node.0] {
             continue;
         }
@@ -34,7 +34,7 @@ pub fn dijkstra_traditional(
                 state.distances[edge.to.0] = new_distance;
                 state.predecessors[edge.to.0] = Some(node);
 
-                queue.push(QueueNode {
+                queue.insert(QueueNode {
                     node: edge.to,
                     distance: new_distance,
                 });
@@ -57,14 +57,14 @@ pub fn dijkstra_traditional_logged(
     }
 
     let mut state = DijkstraState::new(graph.nodes, source);
-    let mut queue = BinaryHeap::new();
+    let mut queue = BTreeSet::new();
 
     if verbose {
         println!("    ✓ InitializeState completed");
         println!("  ▶ InitializePriorityQueue starting");
     }
 
-    queue.push(QueueNode {
+    queue.insert(QueueNode {
         node: source,
         distance: 0,
     });
@@ -75,7 +75,7 @@ pub fn dijkstra_traditional_logged(
 
     let mut nodes_processed = 0;
 
-    while let Some(QueueNode { node, distance }) = queue.pop() {
+    while let Some(QueueNode { node, distance }) = queue.pop_last() {
         if verbose && nodes_processed == 0 {
             println!("  ▶ ProcessNode starting");
         }
@@ -98,7 +98,7 @@ pub fn dijkstra_traditional_logged(
                 state.distances[edge.to.0] = new_distance;
                 state.predecessors[edge.to.0] = Some(node);
 
-                queue.push(QueueNode {
+                queue.insert(QueueNode {
                     node: edge.to,
                     distance: new_distance,
                 });

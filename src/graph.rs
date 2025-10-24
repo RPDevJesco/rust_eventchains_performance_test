@@ -59,7 +59,7 @@ impl Graph {
             let to = rng.next_usize() % nodes;
 
             if from != to {
-                let edge_key = (from.min(to), from.max(to));
+                let edge_key: (usize, usize) = (from.min(to), from.max(to));
                 if edge_set.insert(edge_key) {
                     let weight = (rng.next_usize() % max_weight as usize) as u32 + 1;
                     graph.add_bidirectional_edge(NodeId(from), NodeId(to), weight);
