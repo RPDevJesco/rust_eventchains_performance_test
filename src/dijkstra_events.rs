@@ -127,8 +127,8 @@ impl FinalizeResultEvent {
 
 impl ChainableEvent for FinalizeResultEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let state: DijkstraState = match context.take("state") {
-            Some(s) => *s,
+        let state: &DijkstraState = match context.get("state") {
+            Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
