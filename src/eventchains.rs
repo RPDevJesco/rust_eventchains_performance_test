@@ -49,10 +49,17 @@ impl EventContext {
         self.data.insert(key.to_string(), Box::new(value));
     }
 
-    pub fn get<T: Any + Send + Sync + Clone>(&self, key: &str) -> Option<T> {
+    pub fn get<T: Any + Send + Sync + Clone>(&self, key: &str) -> Option<&T> {
         self.data
             .get(key)
-            .and_then(|boxed| boxed.downcast_ref::<T>().cloned())
+            .and_then(|boxed| boxed.downcast_ref::<T>())
+    }
+
+    pub fn take<T: Any + Send + Sync>(&mut self, key: &str) -> Option<Box<T>> {
+        self.data
+            .remove(key)
+            .map(|v| v.downcast::<T>().ok())
+            .flatten()
     }
 
     pub fn has(&self, key: &str) -> bool {

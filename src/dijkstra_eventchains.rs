@@ -32,7 +32,9 @@ pub fn dijkstra_eventchains_bare(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get("result").unwrap()
+        let res: &ShortestPathResult = context.get("result").unwrap();
+
+        res.clone()
     } else {
         ShortestPathResult {
             source,
@@ -77,7 +79,9 @@ pub fn dijkstra_eventchains_full(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get("result").unwrap()
+        let res: &ShortestPathResult = context.get("result").unwrap();
+
+        res.clone()
     } else {
         ShortestPathResult {
             source,
@@ -113,7 +117,9 @@ pub fn dijkstra_eventchains_optimized(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get("result").unwrap()
+        let res: &ShortestPathResult = context.get("result").unwrap();
+
+        res.clone()
     } else {
         ShortestPathResult {
             source,
@@ -134,22 +140,20 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
         use std::collections::BinaryHeap;
 
         // Get references from context - note: these will be cloned
-        let queue: BinaryHeap<QueueNode> = match context.get("queue") {
-            Some(q) => q,
+        let mut queue: BinaryHeap<QueueNode> = match context.take("queue") {
+            Some(q) => *q,
             None => return EventResult::Failure("Queue not found".to_string()),
         };
 
-        let mut state: DijkstraState = match context.get("state") {
-            Some(s) => s,
+        let mut state: DijkstraState = match context.take("state") {
+            Some(s) => *s,
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: Arc<Graph> = match context.get("graph") {
-            Some(g) => g,
+        let graph: Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
+            Some(g) => g.clone(),
             None => return EventResult::Failure("Graph not found".to_string()),
         };
-
-        let mut queue = queue;
 
         while let Some(QueueNode { node, distance }) = queue.pop() {
             if state.visited[node.0] || distance > state.distances[node.0] {

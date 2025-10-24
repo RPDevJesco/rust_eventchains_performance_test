@@ -33,8 +33,8 @@ pub struct InitializePriorityQueueEvent;
 
 impl ChainableEvent for InitializePriorityQueueEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let source: NodeId = match context.get("source") {
-            Some(s) => s,
+        let source: NodeId = match context.get::<NodeId>("source") {
+            Some(s) => s.clone(),
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
 
@@ -58,22 +58,20 @@ pub struct ProcessNodeEvent;
 
 impl ChainableEvent for ProcessNodeEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let queue: BinaryHeap<QueueNode> = match context.get("queue") {
-            Some(q) => q,
+        let mut queue: BinaryHeap<QueueNode> = match context.take("queue") {
+            Some(q) => *q,
             None => return EventResult::Failure("Queue not found in context".to_string()),
         };
 
-        let mut state: DijkstraState = match context.get("state") {
-            Some(s) => s,
+        let mut state: DijkstraState = match context.take("state") {
+            Some(s) => *s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let graph: Arc<Graph> = match context.get("graph") {
-            Some(g) => g,
+        let graph: Arc<Graph> = match context.get::<Arc<Graph>>("graph") {
+            Some(g) => g.clone(),
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
-
-        let mut queue = queue; // Make queue mutable
 
         if let Some(QueueNode { node, distance }) = queue.pop() {
             // Skip if already visited or if distance is stale
@@ -129,13 +127,13 @@ impl FinalizeResultEvent {
 
 impl ChainableEvent for FinalizeResultEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let state: DijkstraState = match context.get("state") {
-            Some(s) => s,
+        let state: DijkstraState = match context.take("state") {
+            Some(s) => *s,
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let source: NodeId = match context.get("source") {
-            Some(s) => s,
+        let source: NodeId = match context.take("source") {
+            Some(s) => *s,
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
 
