@@ -37,7 +37,7 @@ impl Graph {
 
     /// Generate a random connected graph
     pub fn random_connected(nodes: usize, edges: usize, max_weight: u32) -> Self {
-        use std::collections::HashSet;
+        use hashbrown::HashSet;
 
         let mut graph = Graph::new(nodes);
         let mut rng = SimpleRng::new(12345);
