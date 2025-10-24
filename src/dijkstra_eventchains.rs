@@ -10,16 +10,17 @@ pub fn dijkstra_eventchains_bare(
     target: NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
     chain.add_event(Box::new(InitializePriorityQueueEvent));
 
     // Process nodes in a loop-like fashion
     // This is a limitation of the pattern for inherently iterative algorithms
-    for _ in 0..graph.nodes {
+    for _ in 0..node_count {
         chain.add_event(Box::new(ProcessNodeEvent));
     }
 
@@ -48,7 +49,8 @@ pub fn dijkstra_eventchains_full(
     verbose: bool,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -59,11 +61,11 @@ pub fn dijkstra_eventchains_full(
     chain.use_middleware(Box::new(LoggingMiddleware::new(verbose)));
 
     // Add events
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
     chain.add_event(Box::new(InitializePriorityQueueEvent));
 
     // Process nodes
-    for _ in 0..graph.nodes {
+    for _ in 0..node_count {
         chain.add_event(Box::new(ProcessNodeEvent));
     }
 
@@ -92,12 +94,13 @@ pub fn dijkstra_eventchains_optimized(
     target: NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
     // Add events
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
     chain.add_event(Box::new(InitializePriorityQueueEvent));
 
     // Use a single "process all nodes" event
