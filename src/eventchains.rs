@@ -195,13 +195,13 @@ pub enum FaultToleranceMode {
 }
 
 /// Main EventChain orchestrator
-pub struct EventChain {
-    events: Vec<Box<dyn ChainableEvent>>,
-    middlewares: Vec<Box<dyn EventMiddleware>>,
+pub struct EventChain<'a> {
+    events: Vec<&'a dyn ChainableEvent>,
+    middlewares: Vec<&'a dyn EventMiddleware>,
     fault_tolerance: FaultToleranceMode,
 }
 
-impl EventChain {
+impl<'a> EventChain<'a> {
     pub fn new() -> Self {
         Self {
             events: Vec::new(),
@@ -215,12 +215,12 @@ impl EventChain {
         self
     }
 
-    pub fn add_event(&mut self, event: Box<dyn ChainableEvent>) -> &mut Self {
+    pub fn add_event(&mut self, event: &'a dyn ChainableEvent) -> &mut Self {
         self.events.push(event);
         self
     }
 
-    pub fn use_middleware(&mut self, middleware: Box<dyn EventMiddleware>) -> &mut Self {
+    pub fn use_middleware(&mut self, middleware: &'a dyn EventMiddleware) -> &mut Self {
         self.middlewares.push(middleware);
         self
     }
@@ -228,9 +228,9 @@ impl EventChain {
     pub fn execute(&self, context: &mut EventContext) -> ChainResult {
         let mut failures = Vec::new();
 
-        for event in &self.events {
+        for event in self.events.iter() {
             // Build middleware pipeline (LIFO - last registered executes first)
-            let result = self.execute_with_middleware(event.as_ref(), context);
+            let result = self.execute_with_middleware(*event, context);
 
             if result.is_failure() {
                 let failure = EventFailure::new(
@@ -296,7 +296,7 @@ impl EventChain {
     }
 }
 
-impl Default for EventChain {
+impl<'a> Default for EventChain<'a> {
     fn default() -> Self {
         Self::new()
     }

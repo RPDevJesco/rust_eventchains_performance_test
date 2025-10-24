@@ -123,10 +123,7 @@ pub struct QueueNode {
 impl Ord for QueueNode {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering for min-heap
-        other
-            .distance
-            .cmp(&self.distance)
-            .then_with(|| self.node.0.cmp(&other.node.0))
+        other.distance.cmp(&self.distance)
     }
 }
 
