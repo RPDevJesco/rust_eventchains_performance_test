@@ -81,7 +81,6 @@ impl ChainableEvent for ProcessNodeEvent {
             if state.visited[node.0] || distance > state.distances[node.0] {
                 context.set_queue(queue);
                 context.set_state(state);
-                context.set_continues(true);
                 return EventResult::Success(());
             }
 
@@ -101,10 +100,6 @@ impl ChainableEvent for ProcessNodeEvent {
                     });
                 }
             }
-
-            context.set_continues(!queue.is_empty());
-        } else {
-            context.set_continues(false);
         }
 
         context.set_queue(queue);

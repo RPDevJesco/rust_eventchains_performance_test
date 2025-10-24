@@ -32,7 +32,7 @@ pub fn dijkstra_eventchains_bare(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.take_result().unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
             source: *source,
@@ -77,7 +77,7 @@ pub fn dijkstra_eventchains_full(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.take_result().unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
             source: *source,
@@ -113,7 +113,7 @@ pub fn dijkstra_eventchains_optimized(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.take_result().unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
             source: *source,

@@ -43,7 +43,6 @@ pub struct EventContext {
     graph: Option<Arc<Graph>>,
     state: Option<DijkstraState>,
     source: Option<NodeId>,
-    continues: Option<bool>,
     result: Option<ShortestPathResult>,
     queue: Option<BTreeSet<QueueNode>>,
 }
@@ -54,7 +53,6 @@ impl EventContext {
             graph: None,
             state: None,
             source: None,
-            continues: None,
             result: None,
             queue: None,
         }
@@ -66,10 +64,6 @@ impl EventContext {
 
     pub fn get_graph(&self) -> Option<&Arc<Graph>> {
         self.graph.as_ref()
-    }
-
-    pub fn take_graph(&mut self) -> Option<Arc<Graph>> {
-        self.graph.take()
     }
 
     pub fn set_state(&mut self, state: DijkstraState) {
@@ -92,40 +86,16 @@ impl EventContext {
         self.source.as_ref()
     }
 
-    pub fn take_source(&mut self) -> Option<NodeId> {
-        self.source.take()
-    }
-
-    pub fn set_continues(&mut self, continues: bool) {
-        self.continues = Some(continues);
-    }
-
-    pub fn get_continues(&self) -> Option<&bool> {
-        self.continues.as_ref()
-    }
-
-    pub fn take_continues(&mut self) -> Option<bool> {
-        self.continues.take()
-    }
-
     pub fn set_result(&mut self, result: ShortestPathResult) {
         self.result = Some(result);
     }
 
-    pub fn get_result(&self) -> Option<&ShortestPathResult> {
+    pub fn get_result(&mut self) -> Option<&ShortestPathResult> {
         self.result.as_ref()
-    }
-
-    pub fn take_result(&mut self) -> Option<ShortestPathResult> {
-        self.result.take()
     }
 
     pub fn set_queue(&mut self, queue: BTreeSet<QueueNode>) {
         self.queue = Some(queue);
-    }
-
-    pub fn get_queue(&self) -> Option<&BTreeSet<QueueNode>> {
-        self.queue.as_ref()
     }
 
     pub fn take_queue(&mut self) -> Option<BTreeSet<QueueNode>> {
