@@ -8,8 +8,8 @@ use std::sync::Arc;
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
     graph: Arc<Graph>,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
@@ -37,8 +37,8 @@ pub fn dijkstra_eventchains_bare(
         *res
     } else {
         ShortestPathResult {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance: None,
             path: Vec::new(),
         }
@@ -48,8 +48,8 @@ pub fn dijkstra_eventchains_bare(
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
     graph: Arc<Graph>,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
@@ -84,8 +84,8 @@ pub fn dijkstra_eventchains_full(
         *res
     } else {
         ShortestPathResult {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance: None,
             path: Vec::new(),
         }
@@ -96,8 +96,8 @@ pub fn dijkstra_eventchains_full(
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
     graph: Arc<Graph>,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
     let node_count = graph.nodes;
@@ -122,8 +122,8 @@ pub fn dijkstra_eventchains_optimized(
         *res
     } else {
         ShortestPathResult {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance: None,
             path: Vec::new(),
         }

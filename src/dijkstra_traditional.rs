@@ -5,14 +5,14 @@ use std::sync::Arc;
 /// Traditional implementation of Dijkstra's algorithm
 pub fn dijkstra_traditional(
     graph: Arc<Graph>,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
 ) -> ShortestPathResult {
     let mut state = DijkstraState::new(graph.nodes, source);
     let mut queue = BTreeSet::new();
 
     queue.insert(QueueNode {
-        node: source,
+        node: *source,
         distance: 0,
     });
 
@@ -23,7 +23,7 @@ pub fn dijkstra_traditional(
 
         state.visited[node.0] = true;
 
-        if node == target {
+        if &node == target {
             break;
         }
 
@@ -48,8 +48,8 @@ pub fn dijkstra_traditional(
 /// Traditional implementation with logging
 pub fn dijkstra_traditional_logged(
     graph: Arc<Graph>,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
     if verbose {
@@ -65,7 +65,7 @@ pub fn dijkstra_traditional_logged(
     }
 
     queue.insert(QueueNode {
-        node: source,
+        node: *source,
         distance: 0,
     });
 
@@ -87,7 +87,7 @@ pub fn dijkstra_traditional_logged(
         state.visited[node.0] = true;
         nodes_processed += 1;
 
-        if node == target {
+        if &node == target {
             break;
         }
 

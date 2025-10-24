@@ -10,14 +10,17 @@ pub struct InitializeStateEvent {
 }
 
 impl InitializeStateEvent {
-    pub fn new(source: NodeId, node_count: usize) -> Self {
-        Self { source, node_count }
+    pub fn new(source: &NodeId, node_count: usize) -> Self {
+        Self {
+            source: *source,
+            node_count,
+        }
     }
 }
 
 impl ChainableEvent for InitializeStateEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let state = DijkstraState::new(self.node_count, self.source);
+        let state = DijkstraState::new(self.node_count, &self.source);
         context.set("state", state);
         context.set("source", self.source);
         EventResult::Success(())
@@ -120,8 +123,8 @@ pub struct FinalizeResultEvent {
 }
 
 impl FinalizeResultEvent {
-    pub fn new(target: NodeId) -> Self {
-        Self { target }
+    pub fn new(target: &NodeId) -> Self {
+        Self { target: *target }
     }
 }
 

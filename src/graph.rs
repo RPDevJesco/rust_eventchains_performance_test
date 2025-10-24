@@ -101,7 +101,7 @@ pub struct DijkstraState {
 }
 
 impl DijkstraState {
-    pub fn new(nodes: usize, source: NodeId) -> Self {
+    pub fn new(nodes: usize, source: &NodeId) -> Self {
         let mut distances = vec![u32::MAX; nodes];
         distances[source.0] = 0;
 

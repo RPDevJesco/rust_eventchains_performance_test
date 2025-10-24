@@ -56,7 +56,7 @@ fn main() {
             println!("{}", "─".repeat(80).cyan());
 
             println!("\n{}", "Traditional Implementation:".green().bold());
-            let result_trad = dijkstra_traditional_logged(graph.clone(), source, target, true);
+            let result_trad = dijkstra_traditional_logged(graph.clone(), &source, &target, true);
             if let Some(dist) = result_trad.distance {
                 println!(
                     "  {} Distance: {}, Path length: {}",
@@ -67,7 +67,7 @@ fn main() {
             }
 
             println!("\n{}", "EventChains Implementation:".green().bold());
-            let result_ec = dijkstra_eventchains_full(graph.clone(), source, target, true);
+            let result_ec = dijkstra_eventchains_full(graph.clone(), &source, &target, true);
             if let Some(dist) = result_ec.distance {
                 println!(
                     "  {} Distance: {}, Path length: {}",
@@ -87,7 +87,7 @@ fn main() {
         // Benchmark: Traditional
         let stats_traditional = {
             benchmark("Traditional Dijkstra", runs, || {
-                let result = dijkstra_traditional(graph.clone(), source, target);
+                let result = dijkstra_traditional(graph.clone(), &source, &target);
                 result.distance.is_some()
             })
         };
@@ -95,7 +95,7 @@ fn main() {
         // Benchmark: EventChains (bare)
         let stats_bare = {
             benchmark("EventChains (bare - no middleware)", runs, || {
-                let result = dijkstra_eventchains_bare(graph.clone(), source, target);
+                let result = dijkstra_eventchains_bare(graph.clone(), &source, &target);
                 result.distance.is_some()
             })
         };
@@ -103,7 +103,7 @@ fn main() {
         // Benchmark: EventChains (full)
         let stats_full = {
             benchmark("EventChains (full middleware)", runs, || {
-                let result = dijkstra_eventchains_full(graph.clone(), source, target, false);
+                let result = dijkstra_eventchains_full(graph.clone(), &source, &target, false);
                 result.distance.is_some()
             })
         };
@@ -111,7 +111,7 @@ fn main() {
         // Benchmark: EventChains (optimized)
         let stats_optimized = {
             benchmark("EventChains (optimized)", runs, || {
-                let result = dijkstra_eventchains_optimized(graph.clone(), source, target);
+                let result = dijkstra_eventchains_optimized(graph.clone(), &source, &target);
                 result.distance.is_some()
             })
         };
