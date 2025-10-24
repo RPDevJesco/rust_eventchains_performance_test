@@ -1,7 +1,6 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventResult};
 use crate::graph::{DijkstraState, Graph, NodeId, QueueNode};
 use std::collections::BinaryHeap;
-use std::sync::Arc;
 
 /// Event: Initialize Dijkstra's algorithm state
 pub struct InitializeStateEvent {

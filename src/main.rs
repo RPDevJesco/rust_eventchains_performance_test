@@ -12,8 +12,6 @@ use dijkstra_traditional::*;
 use graph::{Graph, NodeId};
 use profiling::{benchmark, print_comparison_table};
 
-use std::sync::Arc;
-
 fn main() {
     println!("{}", "═".repeat(80).bright_magenta().bold());
     println!(
@@ -42,7 +40,7 @@ fn main() {
         println!("{}", "═".repeat(80).bright_yellow());
 
         // Generate graph
-        let graph = Arc::new(Graph::random_connected(nodes, edges, 100));
+        let graph = Graph::random_connected(nodes, edges, 100);
         let source = NodeId(0);
         let target = NodeId(nodes - 1);
 

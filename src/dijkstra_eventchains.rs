@@ -3,8 +3,6 @@ use crate::eventchains::{EventChain, EventContext, FaultToleranceMode};
 use crate::graph::{Graph, NodeId, ShortestPathResult};
 use crate::middleware::{LoggingMiddleware, PerformanceMiddleware, TimingMiddleware};
 
-use std::sync::Arc;
-
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
     graph: &Graph,

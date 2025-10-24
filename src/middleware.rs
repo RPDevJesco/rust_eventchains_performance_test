@@ -74,13 +74,13 @@ impl EventMiddleware for TimingMiddleware {
 
 /// Performance profiling middleware
 pub struct PerformanceMiddleware {
-    pub event_count: std::sync::Arc<AtomicU64>,
+    pub event_count: AtomicU64,
 }
 
 impl PerformanceMiddleware {
     pub fn new() -> Self {
         Self {
-            event_count: std::sync::Arc::new(AtomicU64::new(0)),
+            event_count: AtomicU64::new(0),
         }
     }
 

@@ -5,7 +5,6 @@ use crate::graph::QueueNode;
 use crate::graph::ShortestPathResult;
 use std::collections::BinaryHeap;
 use std::fmt;
-use std::sync::Arc;
 
 /// Result of an event execution
 #[derive(Debug, Clone)]
