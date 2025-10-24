@@ -132,13 +132,13 @@ impl ChainableEvent for FinalizeResultEvent {
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let source: NodeId = match context.take("source") {
-            Some(s) => *s,
+        let source: &NodeId = match context.get("source") {
+            Some(s) => s,
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
 
         let result =
-            crate::graph::ShortestPathResult::reconstruct_path(&state, source, self.target);
+            crate::graph::ShortestPathResult::reconstruct_path(&state, source, &self.target);
 
         context.set("result", result);
         EventResult::Success(())

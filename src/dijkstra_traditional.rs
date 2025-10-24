@@ -42,7 +42,7 @@ pub fn dijkstra_traditional(
         }
     }
 
-    ShortestPathResult::reconstruct_path(&state, source, target)
+    ShortestPathResult::reconstruct_path(&state, &source, &target)
 }
 
 /// Traditional implementation with logging
@@ -114,7 +114,7 @@ pub fn dijkstra_traditional_logged(
         println!("  ▶ FinalizeResult starting");
     }
 
-    let result = ShortestPathResult::reconstruct_path(&state, source, target);
+    let result = ShortestPathResult::reconstruct_path(&state, &source, &target);
 
     if verbose {
         println!("    ✓ FinalizeResult completed");

@@ -146,17 +146,18 @@ pub struct ShortestPathResult {
 }
 
 impl ShortestPathResult {
-    pub fn reconstruct_path(state: &DijkstraState, source: NodeId, target: NodeId) -> Self {
+    pub fn reconstruct_path(state: &DijkstraState, source: &NodeId, target: &NodeId) -> Self {
         let distance = if state.distances[target.0] == u32::MAX {
             None
         } else {
             Some(state.distances[target.0])
         };
 
-        let mut path = Vec::new();
+        let mut path: Vec<NodeId> = Vec::new();
+
         if distance.is_some() {
-            let mut current = target;
-            while current != source {
+            let mut current = *target;
+            while current != *source {
                 path.push(current);
                 if let Some(pred) = state.predecessors[current.0] {
                     current = pred;
@@ -164,13 +165,13 @@ impl ShortestPathResult {
                     break;
                 }
             }
-            path.push(source);
+            path.push(*source);
             path.reverse();
         }
 
         Self {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance,
             path,
         }
