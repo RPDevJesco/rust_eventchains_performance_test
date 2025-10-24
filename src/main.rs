@@ -24,10 +24,13 @@ fn main() {
     println!("{}", "═".repeat(80).bright_magenta().bold());
 
     let test_cases = vec![
-        (100, 500, 50),    // Small graph
-        (500, 2500, 30),   // Medium graph
-        (1000, 5000, 20),  // Large graph
-        (2000, 10000, 10), // Extra large graph
+        (100, 500, 50),     // Small graph
+        (500, 2500, 30),    // Medium graph
+        (1000, 5000, 20),   // Large graph
+        (2000, 10000, 10),  // Extra large graph
+        (4000, 20000, 10),  // Extra large graph
+        (8000, 40000, 10),  // Extra large graph
+        (16000, 80000, 10), // Extra large graph
     ];
 
     for (nodes, edges, runs) in test_cases {
