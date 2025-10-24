@@ -44,12 +44,13 @@ impl Graph {
         let mut edge_set = HashSet::new();
 
         // Ensure connectivity by creating a spanning tree
-        for i in 1..nodes {
+        (1..nodes).into_iter().for_each(|i| {
             let parent = rng.next_usize() % i;
             let weight = (rng.next_usize() % max_weight as usize) as u32 + 1;
             graph.add_bidirectional_edge(NodeId(parent), NodeId(i), weight);
-            edge_set.insert((parent.min(i), parent.max(i)));
-        }
+            let parent_key: (usize, usize) = Self::min_max(parent, i);
+            edge_set.insert(parent_key);
+        });
 
         // Add remaining random edges
         let mut added = nodes - 1;
@@ -59,7 +60,8 @@ impl Graph {
             let to = rng.next_usize() % nodes;
 
             if from != to {
-                let edge_key: (usize, usize) = (from.min(to), from.max(to));
+                // no need to do a min and a max call
+                let edge_key: (usize, usize) = Self::min_max(from, to);
                 if edge_set.insert(edge_key) {
                     let weight = (rng.next_usize() % max_weight as usize) as u32 + 1;
                     graph.add_bidirectional_edge(NodeId(from), NodeId(to), weight);
@@ -70,6 +72,11 @@ impl Graph {
         }
 
         graph
+    }
+
+    #[inline]
+    fn min_max(lhs: usize, rhs: usize) -> (usize, usize) {
+        if lhs < rhs { (lhs, rhs) } else { (rhs, lhs) }
     }
 }
 
@@ -123,7 +130,10 @@ pub struct QueueNode {
 impl Ord for QueueNode {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering for min-heap
-        other.distance.cmp(&self.distance)
+        other
+            .distance
+            .cmp(&self.distance)
+            .then_with(|| self.node.0.cmp(&other.node.0))
     }
 }
 
