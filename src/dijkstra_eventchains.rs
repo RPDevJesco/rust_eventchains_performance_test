@@ -144,7 +144,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
         use crate::graph::QueueNode;
 
         while let Some(QueueNode { node, distance }) = context.queue_pop() {
-            context.process_node(node, distance);
+            context.process_node(&node, &distance);
         }
 
         EventResult::Success(())

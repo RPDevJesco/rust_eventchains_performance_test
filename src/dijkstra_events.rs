@@ -61,7 +61,7 @@ pub struct ProcessNodeEvent;
 impl ChainableEvent for ProcessNodeEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
         if let Some(QueueNode { node, distance }) = context.queue_pop() {
-            context.process_node(node, distance);
+            context.process_node(&node, &distance);
         }
 
         EventResult::Success(())
@@ -96,7 +96,7 @@ impl ChainableEvent for FinalizeResultEvent {
         };
 
         let result =
-            crate::graph::ShortestPathResult::reconstruct_path(&state, source, &self.target);
+            crate::graph::ShortestPathResult::reconstruct_path(state, source, &self.target);
 
         context.set_result(result);
         EventResult::Success(())

@@ -93,7 +93,7 @@ impl<'a> EventContext<'a> {
         self.queue.as_mut().map(|queue| queue.pop()).flatten()
     }
 
-    pub fn process_node(&mut self, node: NodeId, distance: u32) -> EventResult<()> {
+    pub fn process_node(&mut self, node: &NodeId, distance: &u32) -> EventResult<()> {
         let state: &mut DijkstraState = match &mut self.state {
             Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
@@ -110,7 +110,7 @@ impl<'a> EventContext<'a> {
         };
 
         // Skip if already visited or if distance is stale
-        if state.visited[node.0] || distance > state.distances[node.0] {
+        if state.visited[node.0] || distance > &state.distances[node.0] {
             return EventResult::Success(());
         }
 
@@ -123,7 +123,7 @@ impl<'a> EventContext<'a> {
             if new_distance < state.distances[edge.to.0] {
                 {
                     state.distances[edge.to.0] = new_distance;
-                    state.predecessors[edge.to.0] = Some(node);
+                    state.predecessors[edge.to.0] = Some(*node);
                 }
 
                 let node = QueueNode {
