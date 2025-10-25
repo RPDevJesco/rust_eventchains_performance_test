@@ -3,23 +3,27 @@ use crate::eventchains::{EventChain, EventContext, FaultToleranceMode};
 use crate::graph::{Graph, NodeId, ShortestPathResult};
 use crate::middleware::{LoggingMiddleware, PerformanceMiddleware, TimingMiddleware};
 
+use std::sync::Arc;
+use crate::noop_middleware::NoOpMiddleware;
+
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
-    graph: &Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
     chain.add_event(Box::new(InitializePriorityQueueEvent));
 
     // Process nodes in a loop-like fashion
     // This is a limitation of the pattern for inherently iterative algorithms
-    for _ in 0..graph.nodes {
+    for _ in 0..node_count {
         chain.add_event(Box::new(ProcessNodeEvent));
     }
 
@@ -42,13 +46,14 @@ pub fn dijkstra_eventchains_bare(
 
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
-    graph: &Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
@@ -59,11 +64,11 @@ pub fn dijkstra_eventchains_full(
     chain.use_middleware(Box::new(LoggingMiddleware::new(verbose)));
 
     // Add events
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
     chain.add_event(Box::new(InitializePriorityQueueEvent));
 
     // Process nodes
-    for _ in 0..graph.nodes {
+    for _ in 0..node_count {
         chain.add_event(Box::new(ProcessNodeEvent));
     }
 
@@ -87,20 +92,99 @@ pub fn dijkstra_eventchains_full(
 /// Run Dijkstra using a more efficient EventChains approach
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
-    graph: &Graph,
+    graph: Arc<Graph>,
     source: NodeId,
     target: NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set("graph", graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
     // Add events
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
     chain.add_event(Box::new(InitializePriorityQueueEvent));
 
     // Use a single "process all nodes" event
+    chain.add_event(Box::new(ProcessAllNodesEvent));
+    chain.add_event(Box::new(FinalizeResultEvent::new(target)));
+
+    // Execute chain
+    let result = chain.execute(&mut context);
+
+    if result.success {
+        context.get("result").unwrap()
+    } else {
+        ShortestPathResult {
+            source,
+            target,
+            distance: None,
+            path: Vec::new(),
+        }
+    }
+}
+
+/// Run Dijkstra using optimized EventChains with logging and timing middleware
+/// This is for fair comparison in Tier 4 benchmarks
+pub fn dijkstra_eventchains_optimized_with_middleware(
+    graph: Arc<Graph>,
+    source: NodeId,
+    target: NodeId,
+    verbose: bool,
+) -> ShortestPathResult {
+    let mut context = EventContext::new();
+    let node_count = graph.nodes;
+    context.set("graph", graph);
+
+    let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
+
+    // Add middleware (same as full version)
+    chain.use_middleware(Box::new(TimingMiddleware::new(verbose)));
+    chain.use_middleware(Box::new(LoggingMiddleware::new(verbose)));
+
+    // Add events (using optimized version - only 4 events total)
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
+    chain.add_event(Box::new(InitializePriorityQueueEvent));
+    chain.add_event(Box::new(ProcessAllNodesEvent));
+    chain.add_event(Box::new(FinalizeResultEvent::new(target)));
+
+    // Execute chain
+    let result = chain.execute(&mut context);
+
+    if result.success {
+        context.get("result").unwrap()
+    } else {
+        ShortestPathResult {
+            source,
+            target,
+            distance: None,
+            path: Vec::new(),
+        }
+    }
+}
+
+pub fn dijkstra_eventchains_with_n_middleware(
+    graph: Arc<Graph>,
+    source: NodeId,
+    target: NodeId,
+    n: usize,
+) -> ShortestPathResult {
+    let mut context = EventContext::new();
+    let node_count = graph.nodes;
+    context.set("graph", graph);
+
+    let mut chain = EventChain::new()
+        .with_fault_tolerance(FaultToleranceMode::Strict);
+
+    // Add n no-op middleware layers
+    for i in 0..n {
+        chain.use_middleware(Box::new(NoOpMiddleware::new(i)));
+    }
+
+    // Add events (using optimized version)
+    chain.add_event(Box::new(InitializeStateEvent::new(source, node_count)));
+    chain.add_event(Box::new(InitializePriorityQueueEvent));
     chain.add_event(Box::new(ProcessAllNodesEvent));
     chain.add_event(Box::new(FinalizeResultEvent::new(target)));
 
@@ -139,7 +223,7 @@ impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
             None => return EventResult::Failure("State not found".to_string()),
         };
 
-        let graph: Graph = match context.get("graph") {
+        let graph: Arc<Graph> = match context.get("graph") {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found".to_string()),
         };

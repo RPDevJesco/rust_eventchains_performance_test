@@ -20,15 +20,15 @@ impl EventMiddleware for LoggingMiddleware {
         next: &mut dyn FnMut(&mut EventContext) -> EventResult<()>,
     ) -> EventResult<()> {
         if self.verbose {
-            println!("  ▶ {} starting", event.name());
+            println!("  > {} starting", event.name());
         }
 
         let result = next(context);
 
         if self.verbose {
             match &result {
-                EventResult::Success(_) => println!("    ✓ {} completed", event.name()),
-                EventResult::Failure(err) => println!("    ✗ {} failed: {}", event.name(), err),
+                EventResult::Success(_) => println!("    * {} completed", event.name()),
+                EventResult::Failure(err) => println!("    X {} failed: {}", event.name(), err),
             }
         }
 
@@ -62,7 +62,7 @@ impl EventMiddleware for TimingMiddleware {
 
         if self.log_timing {
             println!(
-                "    ⏱️  {} took {}μs",
+                "    [T] {} took {}us",
                 event.name(),
                 duration.as_micros()
             );

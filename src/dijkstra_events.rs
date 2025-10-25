@@ -1,6 +1,7 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventResult};
 use crate::graph::{DijkstraState, Graph, NodeId, QueueNode};
 use std::collections::BinaryHeap;
+use std::sync::Arc;
 
 /// Event: Initialize Dijkstra's algorithm state
 pub struct InitializeStateEvent {
@@ -67,7 +68,7 @@ impl ChainableEvent for ProcessNodeEvent {
             None => return EventResult::Failure("State not found in context".to_string()),
         };
 
-        let graph: Graph = match context.get("graph") {
+        let graph: Arc<Graph> = match context.get("graph") {
             Some(g) => g,
             None => return EventResult::Failure("Graph not found in context".to_string()),
         };
@@ -138,11 +139,8 @@ impl ChainableEvent for FinalizeResultEvent {
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
 
-        let result = crate::graph::ShortestPathResult::reconstruct_path(
-            &state,
-            source,
-            self.target,
-        );
+        let result =
+            crate::graph::ShortestPathResult::reconstruct_path(&state, source, self.target);
 
         context.set("result", result);
         EventResult::Success(())
