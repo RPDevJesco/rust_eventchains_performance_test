@@ -6,34 +6,38 @@ use crate::middleware::{LoggingMiddleware, PerformanceMiddleware, TimingMiddlewa
 /// Run Dijkstra using EventChains pattern (bare - no middleware)
 pub fn dijkstra_eventchains_bare(
     graph: &Graph,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
-    chain.add_event(Box::new(InitializePriorityQueueEvent));
+    let init_state = InitializeStateEvent::new(source, node_count);
+    chain.add_event(&init_state);
+    let init_queue = InitializePriorityQueueEvent;
+    chain.add_event(&init_queue);
 
     // Process nodes in a loop-like fashion
     // This is a limitation of the pattern for inherently iterative algorithms
-    for _ in 0..graph.nodes {
-        chain.add_event(Box::new(ProcessNodeEvent));
+    for _ in 0..node_count {
+        chain.add_event(&ProcessNodeEvent);
     }
 
-    chain.add_event(Box::new(FinalizeResultEvent::new(target)));
+    let finalize = FinalizeResultEvent::new(target);
+    chain.add_event(&finalize);
 
     // Execute chain
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get("result").unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance: None,
             path: Vec::new(),
         }
@@ -43,41 +47,48 @@ pub fn dijkstra_eventchains_bare(
 /// Run Dijkstra using EventChains pattern with full middleware
 pub fn dijkstra_eventchains_full(
     graph: &Graph,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
     verbose: bool,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
     // Add middleware (reverse order of execution)
     let perf_middleware = PerformanceMiddleware::new();
-    chain.use_middleware(Box::new(perf_middleware));
-    chain.use_middleware(Box::new(TimingMiddleware::new(verbose)));
-    chain.use_middleware(Box::new(LoggingMiddleware::new(verbose)));
+    chain.use_middleware(&perf_middleware);
+
+    let timing_middle = TimingMiddleware::new(verbose);
+    chain.use_middleware(&timing_middle);
+    let logging_middle = LoggingMiddleware::new(verbose);
+    chain.use_middleware(&logging_middle);
 
     // Add events
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
-    chain.add_event(Box::new(InitializePriorityQueueEvent));
+    let init_state = InitializeStateEvent::new(source, node_count);
+    chain.add_event(&init_state);
+    let init_queue = InitializePriorityQueueEvent;
+    chain.add_event(&init_queue);
 
     // Process nodes
-    for _ in 0..graph.nodes {
-        chain.add_event(Box::new(ProcessNodeEvent));
+    for _ in 0..node_count {
+        chain.add_event(&ProcessNodeEvent);
     }
 
-    chain.add_event(Box::new(FinalizeResultEvent::new(target)));
+    let finalize = FinalizeResultEvent::new(target);
+    chain.add_event(&finalize);
 
     // Execute chain
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get("result").unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance: None,
             path: Vec::new(),
         }
@@ -88,31 +99,36 @@ pub fn dijkstra_eventchains_full(
 /// This version uses fewer events by processing multiple nodes per event
 pub fn dijkstra_eventchains_optimized(
     graph: &Graph,
-    source: NodeId,
-    target: NodeId,
+    source: &NodeId,
+    target: &NodeId,
 ) -> ShortestPathResult {
     let mut context = EventContext::new();
-    context.set("graph", graph.clone());
+    let node_count = graph.nodes;
+    context.set_graph(graph);
 
     let mut chain = EventChain::new().with_fault_tolerance(FaultToleranceMode::Strict);
 
     // Add events
-    chain.add_event(Box::new(InitializeStateEvent::new(source, graph.nodes)));
-    chain.add_event(Box::new(InitializePriorityQueueEvent));
+    let init_state = InitializeStateEvent::new(source, node_count);
+    chain.add_event(&init_state);
+    let init_queue = InitializePriorityQueueEvent;
+    chain.add_event(&init_queue);
 
     // Use a single "process all nodes" event
-    chain.add_event(Box::new(ProcessAllNodesEvent));
-    chain.add_event(Box::new(FinalizeResultEvent::new(target)));
+    let process_all_nodes = ProcessAllNodesEvent;
+    chain.add_event(&process_all_nodes);
+    let finalize = FinalizeResultEvent::new(target);
+    chain.add_event(&finalize);
 
     // Execute chain
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.get("result").unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance: None,
             path: Vec::new(),
         }
@@ -125,50 +141,9 @@ struct ProcessAllNodesEvent;
 impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
     fn execute(&self, context: &mut EventContext) -> crate::eventchains::EventResult<()> {
         use crate::eventchains::EventResult;
-        use crate::graph::{DijkstraState, Graph, QueueNode};
-        use std::collections::BinaryHeap;
 
-        // Get references from context - note: these will be cloned
-        let queue: BinaryHeap<QueueNode> = match context.get("queue") {
-            Some(q) => q,
-            None => return EventResult::Failure("Queue not found".to_string()),
-        };
+        context.process_all_nodes();
 
-        let mut state: DijkstraState = match context.get("state") {
-            Some(s) => s,
-            None => return EventResult::Failure("State not found".to_string()),
-        };
-
-        let graph: Graph = match context.get("graph") {
-            Some(g) => g,
-            None => return EventResult::Failure("Graph not found".to_string()),
-        };
-
-        let mut queue = queue;
-
-        while let Some(QueueNode { node, distance }) = queue.pop() {
-            if state.visited[node.0] || distance > state.distances[node.0] {
-                continue;
-            }
-
-            state.visited[node.0] = true;
-
-            for edge in &graph.adjacency_list[node.0] {
-                let new_distance = distance.saturating_add(edge.weight);
-
-                if new_distance < state.distances[edge.to.0] {
-                    state.distances[edge.to.0] = new_distance;
-                    state.predecessors[edge.to.0] = Some(node);
-
-                    queue.push(QueueNode {
-                        node: edge.to,
-                        distance: new_distance,
-                    });
-                }
-            }
-        }
-
-        context.set("state", state);
         EventResult::Success(())
     }
 

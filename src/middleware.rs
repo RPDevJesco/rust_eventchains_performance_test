@@ -1,5 +1,5 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventMiddleware, EventResult};
-use std::time::Instant;
+use std::{sync::atomic::AtomicU64, time::Instant};
 
 /// Logging middleware that tracks event execution
 pub struct LoggingMiddleware {
@@ -61,16 +61,12 @@ impl EventMiddleware for TimingMiddleware {
         let duration = start.elapsed();
 
         if self.log_timing {
-            println!(
-                "    ⏱️  {} took {}μs",
-                event.name(),
-                duration.as_micros()
-            );
+            println!("    ⏱️  {} took {}μs", event.name(), duration.as_micros());
         }
 
         // Store timing in context for profiling
-        let key = format!("{}_duration_ns", event.name());
-        context.set(&key, duration.as_nanos() as u64);
+        // let key = format!("{}_duration_ns", event.name());
+        // context.set(&key, duration.as_nanos() as u64);
 
         result
     }
@@ -78,18 +74,18 @@ impl EventMiddleware for TimingMiddleware {
 
 /// Performance profiling middleware
 pub struct PerformanceMiddleware {
-    pub event_count: std::sync::Arc<std::sync::Mutex<u64>>,
+    pub event_count: AtomicU64,
 }
 
 impl PerformanceMiddleware {
     pub fn new() -> Self {
         Self {
-            event_count: std::sync::Arc::new(std::sync::Mutex::new(0)),
+            event_count: AtomicU64::new(0),
         }
     }
 
     pub fn get_event_count(&self) -> u64 {
-        *self.event_count.lock().unwrap()
+        self.event_count.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 
@@ -101,8 +97,8 @@ impl EventMiddleware for PerformanceMiddleware {
         next: &mut dyn FnMut(&mut EventContext) -> EventResult<()>,
     ) -> EventResult<()> {
         {
-            let mut count = self.event_count.lock().unwrap();
-            *count += 1;
+            self.event_count
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         }
 
         next(context)

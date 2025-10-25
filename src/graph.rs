@@ -1,4 +1,3 @@
-use std::collections::{BinaryHeap, HashMap};
 use std::cmp::Ordering;
 
 /// Node in the graph
@@ -38,19 +37,20 @@ impl Graph {
 
     /// Generate a random connected graph
     pub fn random_connected(nodes: usize, edges: usize, max_weight: u32) -> Self {
-        use std::collections::HashSet;
-        
+        use hashbrown::HashSet;
+
         let mut graph = Graph::new(nodes);
         let mut rng = SimpleRng::new(12345);
         let mut edge_set = HashSet::new();
 
         // Ensure connectivity by creating a spanning tree
-        for i in 1..nodes {
+        (1..nodes).into_iter().for_each(|i| {
             let parent = rng.next_usize() % i;
             let weight = (rng.next_usize() % max_weight as usize) as u32 + 1;
             graph.add_bidirectional_edge(NodeId(parent), NodeId(i), weight);
-            edge_set.insert((parent.min(i), parent.max(i)));
-        }
+            let parent_key: (usize, usize) = Self::min_max(parent, i);
+            edge_set.insert(parent_key);
+        });
 
         // Add remaining random edges
         let mut added = nodes - 1;
@@ -58,9 +58,10 @@ impl Graph {
         while added < edges && attempts < edges * 10 {
             let from = rng.next_usize() % nodes;
             let to = rng.next_usize() % nodes;
-            
+
             if from != to {
-                let edge_key = (from.min(to), from.max(to));
+                // no need to do a min and a max call
+                let edge_key: (usize, usize) = Self::min_max(from, to);
                 if edge_set.insert(edge_key) {
                     let weight = (rng.next_usize() % max_weight as usize) as u32 + 1;
                     graph.add_bidirectional_edge(NodeId(from), NodeId(to), weight);
@@ -71,6 +72,11 @@ impl Graph {
         }
 
         graph
+    }
+
+    #[inline]
+    fn min_max(lhs: usize, rhs: usize) -> (usize, usize) {
+        if lhs < rhs { (lhs, rhs) } else { (rhs, lhs) }
     }
 }
 
@@ -85,7 +91,9 @@ impl SimpleRng {
     }
 
     pub fn next_usize(&mut self) -> usize {
-        self.state = self.state.wrapping_mul(6364136223846793005)
+        self.state = self
+            .state
+            .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
         (self.state >> 32) as usize
     }
@@ -100,7 +108,7 @@ pub struct DijkstraState {
 }
 
 impl DijkstraState {
-    pub fn new(nodes: usize, source: NodeId) -> Self {
+    pub fn new(nodes: usize, source: &NodeId) -> Self {
         let mut distances = vec![u32::MAX; nodes];
         distances[source.0] = 0;
 
@@ -122,7 +130,9 @@ pub struct QueueNode {
 impl Ord for QueueNode {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering for min-heap
-        other.distance.cmp(&self.distance)
+        other
+            .distance
+            .cmp(&self.distance)
             .then_with(|| self.node.0.cmp(&other.node.0))
     }
 }
@@ -143,21 +153,18 @@ pub struct ShortestPathResult {
 }
 
 impl ShortestPathResult {
-    pub fn reconstruct_path(
-        state: &DijkstraState,
-        source: NodeId,
-        target: NodeId,
-    ) -> Self {
+    pub fn reconstruct_path(state: &DijkstraState, source: &NodeId, target: &NodeId) -> Self {
         let distance = if state.distances[target.0] == u32::MAX {
             None
         } else {
             Some(state.distances[target.0])
         };
 
-        let mut path = Vec::new();
+        let mut path: Vec<NodeId> = Vec::new();
+
         if distance.is_some() {
-            let mut current = target;
-            while current != source {
+            let mut current = *target;
+            while current != *source {
                 path.push(current);
                 if let Some(pred) = state.predecessors[current.0] {
                     current = pred;
@@ -165,13 +172,13 @@ impl ShortestPathResult {
                     break;
                 }
             }
-            path.push(source);
+            path.push(*source);
             path.reverse();
         }
 
         Self {
-            source,
-            target,
+            source: *source,
+            target: *target,
             distance,
             path,
         }

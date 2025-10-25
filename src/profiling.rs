@@ -66,9 +66,9 @@ impl PerformanceStats {
 }
 
 /// Run a benchmark multiple times and collect statistics
-pub fn benchmark<F>(name: &str, runs: usize, mut func: F) -> PerformanceStats
+pub fn benchmark<F>(name: &str, runs: usize, func: F) -> PerformanceStats
 where
-    F: FnMut() -> bool,
+    F: Fn() -> bool,
 {
     println!("\n{}", format!("Benchmarking: {}", name).cyan().bold());
     println!("{}", "━".repeat(60).cyan());
