@@ -60,9 +60,7 @@ pub struct ProcessNodeEvent;
 
 impl ChainableEvent for ProcessNodeEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        if let Some(QueueNode { node, distance }) = context.queue_pop() {
-            context.process_node(&node, &distance);
-        }
+        context.process_one_node();
 
         EventResult::Success(())
     }

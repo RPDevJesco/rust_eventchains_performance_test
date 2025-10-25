@@ -89,11 +89,28 @@ impl<'a> EventContext<'a> {
         self.queue = Some(queue);
     }
 
-    pub fn queue_pop(&mut self) -> Option<QueueNode> {
+    #[inline]
+    fn queue_pop(&mut self) -> Option<QueueNode> {
         self.queue.as_mut().map(|queue| queue.pop()).flatten()
     }
 
-    pub fn process_node(&mut self, node: &NodeId, distance: &u32) -> EventResult<()> {
+    pub fn process_one_node(&mut self) -> EventResult<()> {
+        if let Some(QueueNode { node, distance }) = self.queue_pop() {
+            self.process_node(&node, &distance);
+        }
+
+        EventResult::Success(())
+    }
+
+    pub fn process_all_nodes(&mut self) -> EventResult<()> {
+        while let Some(QueueNode { node, distance }) = self.queue_pop() {
+            self.process_node(&node, &distance);
+        }
+
+        EventResult::Success(())
+    }
+
+    fn process_node(&mut self, node: &NodeId, distance: &u32) -> EventResult<()> {
         let state: &mut DijkstraState = match &mut self.state {
             Some(s) => s,
             None => return EventResult::Failure("State not found in context".to_string()),
