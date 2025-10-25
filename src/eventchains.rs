@@ -61,20 +61,12 @@ impl<'a> EventContext<'a> {
         self.graph = Some(graph);
     }
 
-    pub fn get_graph(&'a self) -> Option<&'a Graph> {
-        self.graph
-    }
-
     pub fn set_state(&mut self, state: DijkstraState) {
         self.state = Some(state);
     }
 
     pub fn get_state(&self) -> Option<&DijkstraState> {
         self.state.as_ref()
-    }
-
-    pub fn take_state(&mut self) -> Option<DijkstraState> {
-        self.state.take()
     }
 
     pub fn set_source(&mut self, source: NodeId) {
@@ -89,16 +81,61 @@ impl<'a> EventContext<'a> {
         self.result = Some(result);
     }
 
-    pub fn take_result(&mut self) -> Option<ShortestPathResult> {
-        self.result.take()
+    pub fn get_result(&mut self) -> Option<&ShortestPathResult> {
+        self.result.as_ref()
     }
 
     pub fn set_queue(&mut self, queue: BinaryHeap<QueueNode>) {
         self.queue = Some(queue);
     }
 
-    pub fn take_queue(&mut self) -> Option<BinaryHeap<QueueNode>> {
-        self.queue.take()
+    pub fn queue_pop(&mut self) -> Option<QueueNode> {
+        self.queue.as_mut().map(|queue| queue.pop()).flatten()
+    }
+
+    pub fn process_node(&mut self, node: NodeId, distance: u32) -> EventResult<()> {
+        let state: &mut DijkstraState = match &mut self.state {
+            Some(s) => s,
+            None => return EventResult::Failure("State not found in context".to_string()),
+        };
+
+        let queue: &mut BinaryHeap<QueueNode> = match &mut self.queue {
+            Some(q) => q,
+            None => return EventResult::Failure("Queue not found in context".to_string()),
+        };
+
+        let graph: &Graph = match self.graph {
+            Some(g) => g,
+            None => return EventResult::Failure("Graph not found in context".to_string()),
+        };
+
+        // Skip if already visited or if distance is stale
+        if state.visited[node.0] || distance > state.distances[node.0] {
+            return EventResult::Success(());
+        }
+
+        state.visited[node.0] = true;
+
+        // Process neighbors
+        graph.adjacency_list[node.0].iter().for_each(|edge| {
+            let new_distance = distance.saturating_add(edge.weight);
+
+            if new_distance < state.distances[edge.to.0] {
+                {
+                    state.distances[edge.to.0] = new_distance;
+                    state.predecessors[edge.to.0] = Some(node);
+                }
+
+                let node = QueueNode {
+                    node: edge.to,
+                    distance: new_distance,
+                };
+
+                queue.push(node);
+            }
+        });
+
+        EventResult::Success(())
     }
 }
 
@@ -284,7 +321,7 @@ impl<'a> EventChain<'a> {
 
         // Get the current middleware (reverse order)
         let middleware_idx = self.middlewares.len() - 1 - middleware_index;
-        let middleware = &self.middlewares[middleware_idx];
+        let middleware = self.middlewares[middleware_idx];
 
         // Create a closure that calls the next middleware (or event)
         let mut next = |ctx: &mut EventContext| -> EventResult<()> {

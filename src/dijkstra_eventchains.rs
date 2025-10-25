@@ -33,7 +33,7 @@ pub fn dijkstra_eventchains_bare(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.take_result().unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
             source: *source,
@@ -84,7 +84,7 @@ pub fn dijkstra_eventchains_full(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.take_result().unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
             source: *source,
@@ -124,7 +124,7 @@ pub fn dijkstra_eventchains_optimized(
     let result = chain.execute(&mut context);
 
     if result.success {
-        context.take_result().unwrap()
+        context.get_result().unwrap().clone()
     } else {
         ShortestPathResult {
             source: *source,
@@ -141,48 +141,12 @@ struct ProcessAllNodesEvent;
 impl crate::eventchains::ChainableEvent for ProcessAllNodesEvent {
     fn execute(&self, context: &mut EventContext) -> crate::eventchains::EventResult<()> {
         use crate::eventchains::EventResult;
-        use crate::graph::{DijkstraState, Graph, QueueNode};
-        use std::collections::BinaryHeap;
+        use crate::graph::QueueNode;
 
-        // Get references from context - note: these will be cloned
-        let mut queue: BinaryHeap<QueueNode> = match context.take_queue() {
-            Some(q) => q,
-            None => return EventResult::Failure("Queue not found".to_string()),
-        };
-
-        let mut state: DijkstraState = match context.take_state() {
-            Some(s) => s,
-            None => return EventResult::Failure("State not found".to_string()),
-        };
-
-        let graph: &Graph = match context.get_graph() {
-            Some(g) => g,
-            None => return EventResult::Failure("Graph not found".to_string()),
-        };
-
-        while let Some(QueueNode { node, distance }) = queue.pop() {
-            if state.visited[node.0] || distance > state.distances[node.0] {
-                continue;
-            }
-
-            state.visited[node.0] = true;
-
-            graph.adjacency_list[node.0].iter().for_each(|edge| {
-                let new_distance = distance.saturating_add(edge.weight);
-
-                if new_distance < state.distances[edge.to.0] {
-                    state.distances[edge.to.0] = new_distance;
-                    state.predecessors[edge.to.0] = Some(node);
-
-                    queue.push(QueueNode {
-                        node: edge.to,
-                        distance: new_distance,
-                    });
-                }
-            })
+        while let Some(QueueNode { node, distance }) = context.queue_pop() {
+            context.process_node(node, distance);
         }
 
-        context.set_state(state);
         EventResult::Success(())
     }
 

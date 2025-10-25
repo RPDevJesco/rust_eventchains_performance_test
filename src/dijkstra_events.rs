@@ -1,5 +1,5 @@
 use crate::eventchains::{ChainableEvent, EventContext, EventResult};
-use crate::graph::{DijkstraState, Graph, NodeId, QueueNode};
+use crate::graph::{DijkstraState, NodeId, QueueNode};
 use std::collections::BinaryHeap;
 
 /// Event: Initialize Dijkstra's algorithm state
@@ -35,14 +35,14 @@ pub struct InitializePriorityQueueEvent;
 
 impl ChainableEvent for InitializePriorityQueueEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let source: NodeId = match context.get_source() {
-            Some(s) => s.clone(),
+        let source: &NodeId = match context.get_source() {
+            Some(s) => s,
             None => return EventResult::Failure("Source not found in context".to_string()),
         };
 
         let mut queue = BinaryHeap::new();
         queue.push(QueueNode {
-            node: source,
+            node: *source,
             distance: 0,
         });
 
@@ -60,49 +60,10 @@ pub struct ProcessNodeEvent;
 
 impl ChainableEvent for ProcessNodeEvent {
     fn execute(&self, context: &mut EventContext) -> EventResult<()> {
-        let mut queue: BinaryHeap<QueueNode> = match context.take_queue() {
-            Some(q) => q,
-            None => return EventResult::Failure("Queue not found in context".to_string()),
-        };
-
-        let mut state: DijkstraState = match context.take_state() {
-            Some(s) => s,
-            None => return EventResult::Failure("State not found in context".to_string()),
-        };
-
-        let graph: &Graph = match context.get_graph() {
-            Some(g) => g,
-            None => return EventResult::Failure("Graph not found in context".to_string()),
-        };
-
-        if let Some(QueueNode { node, distance }) = queue.pop() {
-            // Skip if already visited or if distance is stale
-            if state.visited[node.0] || distance > state.distances[node.0] {
-                context.set_queue(queue);
-                context.set_state(state);
-                return EventResult::Success(());
-            }
-
-            state.visited[node.0] = true;
-
-            // Process neighbors
-            graph.adjacency_list[node.0].iter().for_each(|edge| {
-                let new_distance = distance.saturating_add(edge.weight);
-
-                if new_distance < state.distances[edge.to.0] {
-                    state.distances[edge.to.0] = new_distance;
-                    state.predecessors[edge.to.0] = Some(node);
-
-                    queue.push(QueueNode {
-                        node: edge.to,
-                        distance: new_distance,
-                    });
-                }
-            })
+        if let Some(QueueNode { node, distance }) = context.queue_pop() {
+            context.process_node(node, distance);
         }
 
-        context.set_queue(queue);
-        context.set_state(state);
         EventResult::Success(())
     }
 
