@@ -1,0 +1,66 @@
+services:
+  # Build and run the Rust benchmark
+  benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: eventchains-bench:latest
+    container_name: eventchains-rust-benchmark
+    volumes:
+      - ./results:/benchmark/results
+    command: ./dijkstra_eventchains
+
+  # Run with perf profiling (requires privileged mode on Linux)
+  perf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: eventchains-bench:latest
+    container_name: eventchains-perf
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - ./results:/benchmark/results
+    command: perf stat -d ./dijkstra_eventchains
+
+  # Run with valgrind memory profiling
+  valgrind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: eventchains-bench:latest
+    container_name: eventchains-valgrind
+    volumes:
+      - ./results:/benchmark/results
+    command: valgrind --leak-check=full --show-leak-kinds=all ./dijkstra_eventchains
+
+  # Interactive shell for custom testing
+  shell:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: eventchains-bench:latest
+    container_name: eventchains-shell
+    volumes:
+      - ./results:/benchmark/results
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+# Usage:
+#
+# Build:
+#   docker-compose build
+#
+# Run benchmark:
+#   docker-compose up benchmark
+#
+# Perf profiling (Linux host):
+#   docker-compose up perf
+#
+# Memory analysis:
+#   docker-compose up valgrind
+#
+# Interactive shell:
+#   docker-compose run --rm shell

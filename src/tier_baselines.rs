@@ -31,6 +31,10 @@ pub fn dijkstra_tier1_baseline(
 
         state.visited[node.0] = true;
 
+        if node == target {
+            break;  // ✅ EARLY EXIT OPTIMIZATION
+        }
+
         for edge in &graph.adjacency_list[node.0] {
             let new_distance = distance.saturating_add(edge.weight);
 
