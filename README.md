@@ -10,6 +10,8 @@ performance characteristics.
 
 **Pattern overhead compared to traditional implementation:**
 
+docker run --rm --privileged --cap-add=SYS_ADMIN eventchains-rust ` perf stat -d -r 10 ./dijkstra_eventchains
+
 | Language | Overhead |
 |----------|----------|
 | **Rust** | 3-18%    |

@@ -19,6 +19,8 @@ WORKDIR /workspace
 COPY Cargo.toml Cargo.lock ./
 COPY src/ ./src/
 
+ENV RUSTFLAGS='-C target-cpu=native'
+
 # Build the Rust benchmarks in release mode
 RUN cargo build --release
 

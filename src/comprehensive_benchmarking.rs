@@ -24,7 +24,8 @@ unsafe impl GlobalAlloc for TrackingAllocator {
             ALLOCATION_COUNT.fetch_add(1, Ordering::SeqCst);
 
             // Update peak memory
-            let current = ALLOCATED.load(Ordering::SeqCst) - DEALLOCATED.load(Ordering::SeqCst);
+            let current = ALLOCATED.load(Ordering::SeqCst)
+                .saturating_sub(DEALLOCATED.load(Ordering::SeqCst));
             let mut peak = PEAK_MEMORY.load(Ordering::SeqCst);
             while current > peak {
                 match PEAK_MEMORY.compare_exchange_weak(peak, current, Ordering::SeqCst, Ordering::SeqCst) {
